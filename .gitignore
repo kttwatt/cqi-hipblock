@@ -1,0 +1,13 @@
+# This repo holds only what the slide deck uses. Everything else stays local.
+*
+!*/
+!.gitignore
+!README.md
+!video/renders/final.mp4
+!video/renders/usage/usage-steps.mp4
+!video/renders/usage/usage-steps-still.jpg
+!video/blender/place.py
+!video/blender/usage.py
+!video/tools/usage_captions.py
+!hipblock/HipBlock-UltraSmooth-CQI.mp4
+!hipblock/video/assets/media/xray-film.jpg
