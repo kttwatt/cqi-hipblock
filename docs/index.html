@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hip B(Lock) Ultra Smooth CQI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&amp;display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&amp;display=swap">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b141b; overflow: hidden; }
+  #stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; background: #f3f8f8; overflow: hidden; }
+
+  /* ---- slide canvas (the Claude Slides subset, rebuilt in plain CSS) ---- */
+  .slide { position: absolute; inset: 0; width: 1920px; height: 1080px; box-sizing: border-box; overflow: hidden;
+    display: flex; flex-direction: column; font-family: Sarabun, Tahoma, sans-serif; font-size: 32px; line-height: 1.4; color: #1f3a4d;
+    opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s; }
+  .slide.on { opacity: 1; visibility: visible; transition: opacity .45s ease, visibility 0s; }
+  .slide *, .slide *::before, .slide *::after { box-sizing: border-box; }
+  .slide div { min-width: 0; }
+  .slide div:not([style*="display"]) { display: flex; flex-direction: column; }
+  .slide div[data-text] { display: block; }
+  .slide h1, .slide h2, .slide h3, .slide p, .slide ul, .slide ol, .slide table { margin: 0; }
+  .slide h1 { font-size: 96px; font-weight: 600; line-height: 1.1; }
+  .slide h2 { font-size: 64px; font-weight: 600; line-height: 1.15; }
+  .slide h3 { font-size: 44px; font-weight: 600; line-height: 1.2; }
+  .slide ul, .slide ol { padding-left: 1.2em; }
+  .slide li { padding-left: .15em; }
+  .slide li::marker { color: currentColor; }
+  .slide b { font-weight: 700; }
+  .slide img { display: block; flex: none; object-fit: cover; max-width: none; }
+  .slide video { display: block; flex: none; object-fit: cover; background: #000; }
+  .slide table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .slide th, .slide td { border: 1px solid #c9d8dc; padding: .35em .6em; text-align: left; vertical-align: top; }
+  .slide th { font-weight: 600; }
+  .slide .x-icon { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 48px; height: 48px; }
+  .slide .x-icon svg { width: 62%; height: 62%; }
+  .slide .x-shape { display: block; flex: none; }
+  .slide .k-ellipse { border-radius: 50%; }
+  .slide .k-diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .slide .k-arrow-right { clip-path: polygon(0 30%, 60% 30%, 60% 0, 100% 50%, 60% 100%, 60% 70%, 0 70%); }
+  .slide .k-arrow-left { clip-path: polygon(100% 30%, 40% 30%, 40% 0, 0 50%, 40% 100%, 40% 70%, 100% 70%); }
+  .slide .k-arrow-down { clip-path: polygon(30% 0, 70% 0, 70% 60%, 100% 60%, 50% 100%, 0 60%, 30% 60%); }
+  .slide .k-arrow-up { clip-path: polygon(30% 100%, 70% 100%, 70% 40%, 100% 40%, 50% 0, 0 40%, 30% 40%); }
+
+  /* builds: use the individual translate/scale properties so authored transforms stay intact */
+  .slide [data-build-in] { transition: opacity .55s ease, translate .55s cubic-bezier(.2,.8,.2,1), scale .55s cubic-bezier(.2,.8,.2,1); }
+  .slide [data-build-in].pre { opacity: 0; }
+  .slide [data-build-in].pre.fx-rise { translate: 0 60px; }
+  .slide [data-build-in].pre.fx-drop { translate: 0 -60px; }
+  .slide [data-build-in].pre.fx-left { translate: -90px 0; }
+  .slide [data-build-in].pre.fx-right { translate: 90px 0; }
+  .slide [data-build-in].pre.fx-scale { scale: .85; }
+  .slide [data-build-in].pre.fx-pop { scale: .6; }
+  .slide [data-build-in].fx-pop { transition: opacity .4s ease, scale .5s cubic-bezier(.3,1.6,.5,1); }
+
+  /* ---- chrome ---- */
+  #bar { position: fixed; left: 0; bottom: 0; height: 4px; background: #6fb7c1; transition: width .3s; z-index: 5; }
+  #hud { position: fixed; right: 16px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 5; font: 600 14px/1 Sarabun, Tahoma, sans-serif; color: #fff;
+    opacity: 0; transition: opacity .3s; }
+  body.show-hud #hud, #hud:hover { opacity: 1; }
+  #hud button { all: unset; cursor: pointer; padding: 9px 12px; border-radius: 8px; background: rgba(15,30,42,.75); }
+  #hud button:hover { background: rgba(62,142,154,.95); }
+  #hud span { padding: 9px 12px; border-radius: 8px; background: rgba(15,30,42,.75); min-width: 64px; text-align: center; }
+  #hint { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 6; padding: 10px 18px; border-radius: 10px; background: rgba(15,30,42,.85);
+    color: #fff; font: 500 16px/1.3 Sarabun, Tahoma, sans-serif; transition: opacity .6s; pointer-events: none; }
+</style>
+</head>
+<body class="show-hud">
+<div id="stage">
+<section class="slide" id="cover" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; justify-content:center; padding:128px; background:#1f3a4d">
+  <div style="position:absolute; top:0; left:0; width:24px; height:1080px; display:flex; flex-direction:column; background:#6fb7c1">
+  </div>
+  <div style="position:absolute; top:0; left:1440px; width:480px; height:1080px; display:flex; flex-direction:column; background:linear-gradient(160deg, #2c536b 0%, #1f3a4d 100%)">
+  </div>
+  <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; font-weight:600; letter-spacing:1px; color:#9fd0d6">โครงการพัฒนาคุณภาพการพยาบาล (CQI)</p>
+  <h1 style="font-family:Kanit, Tahoma, sans-serif; font-size:112px; font-weight:600; line-height:1.05; color:#f3f8f8">Hip B(Lock)<br>Ultra Smooth</h1>
+  <div style="width:160px; height:8px; display:flex; flex-direction:column; background:#6fb7c1; border-radius:4px">
+  </div>
+  <p style="width:1180px; font-family:Sarabun, Tahoma, sans-serif; font-size:44px; font-weight:600; line-height:1.35; color:#f3f8f8">หมอนกางขาป้องกันข้อสะโพกเทียมเคลื่อนหลุด<br>หลังผ่าตัดเปลี่ยนข้อสะโพกเทียม</p>
+  <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.4; color:#bfd8dc">หลักสูตรเฉพาะทางการพยาบาลปริศัลยกรรมออร์โธปิดิกส์ ประจำปีการศึกษา 2569<br>หน่วยผ่าตัดออร์โธปิดิคส์ โรงพยาบาลศิริราช</p>
+</section>
+<section class="slide" id="team" data-transition="fade" style="background:#f3f8f8">
+  <div style="position:absolute; top:0; left:1560px; width:520px; height:520px; display:flex; flex-direction:column; background:#d9ecee; border-radius:256px">
+  </div>
+  <div id="pac81f8a9ad00r0-62296dca" style="position:absolute; top:84px; left:128px; width:1664px; height:114px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">02 · ผู้รับผิดชอบโครงการ</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">คณะผู้จัดทำ</h2>
+  </div>
+  <div data-build-in="rise 1 auto" style="position:absolute; top:236px; left:128px; width:943px; height:496px; display:flex; flex-direction:column; padding:28px 44px; background:#ffffff; border-radius:24px; box-shadow:0 8px 24px #1f3a4d14">
+    <table style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; color:#1f3a4d">
+      <tr><th style="width:66%">ชื่อ–สกุล</th><th style="width:34%">รหัสนักศึกษา</th></tr>
+      <tr><td>นางสาวกนกวรรณ บวรพิพัฒนชัย</td><td>6911801</td></tr>
+      <tr><td>นายกิตติวัฒน์ ผัดอาจ</td><td>6911803</td></tr>
+      <tr><td>นางสาวสินีพิชญ์ ทองฉิม</td><td>6911833</td></tr>
+      <tr><td>นางสาวสุธาพร สำราญมาก</td><td>6911836</td></tr>
+      <tr><td>นายอดิศักดิ์ ศักดิ์มาก</td><td>6911842</td></tr>
+      <tr><td>นางสาวอรพิน รุ่งเรือง</td><td>6911844</td></tr>
+    </table>
+  </div>
+  <div data-build-in="rise 2 auto" style="position:absolute; top:756px; left:128px; width:943px; height:240px; display:flex; flex-direction:row; gap:32px; align-items:center; padding:32px 44px; background:linear-gradient(135deg, #2b4e63 0%, #182f3f 100%); border-radius:24px; box-shadow:0 14px 36px #1f3a4d30; overflow:hidden">
+    <div style="width:112px; height:112px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:56px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:700; line-height:1; color:#ffffff">★</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:6px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#9fd0d6">ที่ปรึกษาโครงการ</p>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; line-height:1.15; color:#ffffff">พว.อัญชลี ศรีสุข</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; line-height:1.4; color:#d4e7ea">หลักสูตรเฉพาะทางการพยาบาลปริศัลยกรรม ประจำปีการศึกษา 2569</p>
+    </div>
+  </div>
+  <div data-build-in="scale 3 auto" style="position:absolute; top:236px; left:1111px; width:681px; height:760px; display:flex; flex-direction:column; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 18px 44px #1f3a4d2e; overflow:hidden">
+    <img src="media/c20b1e0491a732d082d29a313af0107b.jpg" alt="ภาพหมู่คณะผู้จัดทำในชุดห้องผ่าตัดสีเขียว ทำมือมินิฮาร์ต" style="width:653px; height:732px; border-radius:18px; object-fit:cover; object-position:50% 55%">
+  </div>
+</section>
+<section class="slide" id="intro-video" data-transition="fade" style="background:#000000">
+  <img src="media/a0ab19629ae10c4aab53cd2688433033.jpg" alt="วิดีโอ CQI หมอนกางขาที่หายไป ความยาว 55 วินาที" data-video="media/5d4a06f232a060f9331d130adbf3d40b.mp4" data-video-sound="on" style="position:absolute; top:0px; left:0px; width:1920px; height:1080px; object-fit:cover">
+</section>
+<section class="slide" id="bg-stats" data-transition="fade" style="background:#F3F8F8;color:#1F3A4D;font-family:'Sarabun', Tahoma, sans-serif;padding:104px 128px 112px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:26px;font-weight:600;color:#3E8E9A">03 · ที่มาของโครงการ</p>
+<h2 style="font-family:'Kanit', Tahoma, sans-serif;font-size:60px;font-weight:600;line-height:1.15;color:#1F3A4D">ข้อสะโพกเทียมเคลื่อนหลุด คือภาวะแทรกซ้อนสำคัญ</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:40px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(31,58,77,0.08)">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:120px;font-weight:600;line-height:1.1;color:#B83A2E">2–4%</p>
+<p style="font-size:36px;font-weight:600;text-align:center;line-height:1.4">อุบัติการณ์ข้อสะโพกเทียม<br>เคลื่อนหลุดหลังผ่าตัด</p>
+<p style="font-size:28px;color:#5B7383">Korfitsen et al., 2023</p>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:40px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(31,58,77,0.08)">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:68px;font-weight:600;line-height:2;white-space:nowrap;color:#1F3A4D">223 · 176 · 188</p>
+<p style="font-size:36px;font-weight:600;text-align:center;line-height:1.4">รายที่ผ่าตัดเปลี่ยนข้อสะโพกเทียม<br>ปี 2566 · 2567 · 2568</p>
+<p style="font-size:28px;color:#5B7383">หน่วยผ่าตัดออร์โธปิดิคส์ ศิริราช, 2569</p>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:40px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(31,58,77,0.08)">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:120px;font-weight:600;line-height:1.1;color:#1F3A4D">ทุกราย</p>
+<p style="font-size:36px;font-weight:600;text-align:center;line-height:1.4">ผ่าตัดแบบ posterior approach<br>เสี่ยงข้อหลุดสูงกว่าวิธีอื่น</p>
+<p style="font-size:28px;color:#5B7383">Dimentberg et al., 2023</p>
+</div>
+</div>
+<ul style="font-size:36px;line-height:1.5;color:#2E4A5C">
+<li>การผ่าตัด THA และ Bipolar hemiarthroplasty ช่วยลดปวด เพิ่มการเคลื่อนไหว และคุณภาพชีวิตของผู้ป่วย</li>
+<li>เมื่อข้อหลุด ผู้ป่วยปวด ต้องดึงข้อกลับเข้าที่ บางรายต้องผ่าตัดซ้ำ นอนโรงพยาบาลนานขึ้น และค่ารักษาเพิ่มขึ้น</li>
+</ul>
+</section>
+<section class="slide" id="bg-48h" data-transition="fade" style="background:#f3f8f8">
+  <h2 id="88a53cd2" style="position:absolute; top:149px; left:50%; width:1664px; font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d; transform:translateX(-50%)">แนวทางป้องกันข้อสะโพกเคลื่อนหลุดใน 48 ชั่วโมงแรกหลังผ่าตัด&nbsp;</h2>
+  <div id="p6cf704589062r0-7920150e" style="position:absolute; top:104px; left:128px; width:1664px; height:37px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">03 · ที่มาของโครงการ</p>
+  </div>
+  <p id="p6cf704589062r2-7920150e" style="position:absolute; top:842.41px; left:128px; width:1664px; font-family:Sarabun, Tahoma, sans-serif; font-size:28px; color:#5b7383">ที่มา: วรภักดิ์สกุล สุขดี, 2565</p>
+  <div id="p6cf704589062r1_0-7920150e" style="position:absolute; top:277.41px; left:128px; width:816px; height:525px; display:flex; flex-direction:column; gap:20px; padding:44px 48px; background:#ffffff; border-top:12px solid #2e7d4f; border-radius:24px; box-shadow:0 8px 24px #1f3a4d14">
+    <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; color:#2e7d4f">ควรทำ</h3>
+    <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.5; color:#1f3a4d">
+      <li>นอนหงายราบ กางขา 15–30 องศา</li>
+      <li>วางหมอนระหว่างขา ให้ขาตั้งตรง</li>
+      <li>พลิกตะแคงแบบพลิกทั้งตัว (log roll) ไปด้านที่ไม่ผ่าตัด</li>
+      <li>ขาข้างผ่าตัดเหยียดตรง สอดหมอนไว้ระหว่างขา</li>
+    </ul>
+  </div>
+  <div id="p6cf704589062r1_1-7920150e" style="position:absolute; top:50%; right:128px; width:816px; height:525px; display:flex; flex-direction:column; gap:20px; padding:44px 48px; background:#ffffff; border-top:12px solid #b83a2e; border-radius:24px; box-shadow:0 8px 24px #1f3a4d14; transform:translateY(-50%)">
+    <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; color:#b83a2e">ต้องหลีกเลี่ยง</h3>
+    <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.5; color:#1f3a4d">
+      <li>งอสะโพก (flexion) เกิน 90 องศา</li>
+      <li>หุบขาข้ามแนวกึ่งกลางลำตัว (adduction)</li>
+      <li>หมุนสะโพกเข้าใน (internal rotation)</li>
+      <li>หมุนสะโพกออกด้านนอก (external rotation)</li>
+    </ul>
+  </div>
+</section>
+<section class="slide" id="objectives" data-transition="fade" style="background:#f3f8f8">
+  <div id="pac9c891c355dr0-d1365c89" style="position:absolute; top:104px; left:128px; width:1664px; height:114px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">04 · วัตถุประสงค์</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">วัตถุประสงค์</h2>
+  </div>
+  <div id="pcd30012058edc0-acfe227a" style="position:absolute; top:253px; left:128px; width:1664px; height:167px; display:flex; flex-direction:row; gap:28px; align-items:center; padding:30px 40px; background:#ffffff; border-radius:20px">
+    <p style="width:48px; font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; color:#3e8e9a">1</p>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.4; color:#1f3a4d">เพื่อพัฒนาหมอนกางขา ที่สามารถช่วยรองขา ล็อกขา และผิวสัมผัสนุ่มสำหรับผู้ป่วยหลังได้รับการผ่าตัดเปลี่ยนข้อสะโพกเทียม</p>
+  </div>
+  <div id="pcd30012058edc1-acfe227a" style="position:absolute; top:437px; left:128px; width:1664px; height:167px; display:flex; flex-direction:row; gap:28px; align-items:center; padding:30px 40px; background:#ffffff; border-radius:20px">
+    <p style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; color:#3e8e9a">2</p>
+  </div>
+  <div id="pcd30012058edc2-acfe227a" style="position:absolute; top:622px; left:128px; width:1664px; height:167px; display:flex; flex-direction:row; gap:28px; align-items:center; padding:30px 40px; background:#ffffff; border-radius:20px">
+    <p style="width:48px; font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; color:#3e8e9a">3</p>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.4; color:#1f3a4d">เพื่อศึกษาความพึงพอใจของบุคลากรต่อการใช้งานHip B(Lock) Ultra Smoothในการดูแลผู้ป่วยหลังผ่าตัดเปลี่ยนข้อสะโพกเทียม</p>
+  </div>
+  <p id="pcd30012058edc1_1-acfe227a" style="position:absolute; top:467px; left:245.26px; width:1506.74px; font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.4; color:#1f3a4d">เพื่อป้องกันอุบัติการณ์ข้อสะโพกเทียมเคลื่อนหลุดขณะเคลื่อนย้ายหรือพลิกตะแคงตัวผู้ป่วยหลังผ่าตัดเปลี่ยนข้อสะโพกเทียม</p>
+</section>
+<section class="slide" id="concepts" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">05 · แนวคิดและทฤษฎี</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">แนวคิด/ทฤษฎีที่นำมาประยุกต์ใช้</h2>
+  </div>
+  <div style="flex:1; display:flex; flex-direction:column; gap:20px">
+    <div style="flex:1; display:flex; flex-direction:row; align-items:center; gap:40px; padding:24px 48px; background:#ffffff; border-left:12px solid #3e8e9a; border-radius:24px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; color:#3e8e9a; width:80px">1</p>
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; line-height:1.25; color:#1f3a4d">ทฤษฎีการจัดท่าเพื่อป้องกันข้อสะโพกเทียมเคลื่อนหลุด</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; color:#5b7383">Hip Positioning and Dislocation Prevention</p>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:row; align-items:center; gap:40px; padding:24px 48px; background:#ffffff; border-left:12px solid #3e8e9a; border-radius:24px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; color:#3e8e9a; width:80px">2</p>
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; line-height:1.25; color:#1f3a4d">ทฤษฎีการยกอวัยวะส่วนปลายสูงเพื่อลดอาการบวม</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; color:#5b7383">Elevation Therapy</p>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:row; align-items:center; gap:40px; padding:24px 48px; background:#ffffff; border-left:12px solid #3e8e9a; border-radius:24px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; color:#3e8e9a; width:80px">3</p>
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; line-height:1.25; color:#1f3a4d">ทฤษฎีความมั่นคงและการรองรับอวัยวะ</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; color:#5b7383">Stability and Support Theory</p>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:row; align-items:center; gap:40px; padding:24px 48px; background:#ffffff; border-left:12px solid #3e8e9a; border-radius:24px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; color:#3e8e9a; width:80px">4</p>
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; line-height:1.25; color:#1f3a4d">ทฤษฎีแรงเสียดทานและแรงเฉือน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; color:#5b7383">Friction and Shear Force</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="bg-why" data-transition="fade" style="background:#f3f8f8">
+  <p id="86eb9989" style="position:absolute; top:104px; left:128px; width:1664px; font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">03 · ที่มาของโครงการ</p>
+  <div id="p1ad9b89b226dr1-f71ed414" style="position:absolute; top:257px; left:128px; width:1664px; height:711px; display:flex; flex-direction:row; gap:24px; align-items:center">
+    <div style="display:flex; flex-direction:column; gap:20px; flex:1; padding:44px 48px; background:#ffffff; border-radius:24px; box-shadow:0 8px 24px #1f3a4d14">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; color:#b83a2e">ปัญหา</h3>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.55; color:#1f3a4d">
+        <li>ผู้ป่วยสับสน สมองเสื่อม หรือไม่ให้ความร่วมมือ</li>
+        <li>ขณะพักหรือนอนหลับ อาจพลิกตัวหรือขยับขาโดยไม่รู้ตัว</li>
+        <li>ข้อสะโพกอยู่ในท่าที่ไม่เหมาะสม เสี่ยงต่อการเคลื่อนหลุด</li>
+      </ul>
+    </div>
+    <span class="x-shape k-arrow-right" style="width:80px; height:48px; background:#3e8e9a"></span>
+    <div style="display:flex; flex-direction:column; gap:20px; flex:1; padding:44px 48px; background:#1f3a4d; border-radius:24px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; color:#9fd0d6">แนวคิดนวัตกรรม</h3>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.55; color:#f3f8f8">
+        <li>ประคองขาทั้งสองข้างให้อยู่ในตำแหน่งที่เหมาะสม</li>
+        <li>ลดการหุบขาเข้าหากันหรือไขว้ขา</li>
+        <li>เพิ่มความมั่นคงของข้อสะโพกขณะนอนพัก</li>
+        <li>บุคลากรจัดท่าได้สะดวก ผู้ป่วยและญาติมั่นใจขึ้น</li>
+        <li>ยกขาสูง ส่งเสริมการไหลเวียนของเลือด ลดบวม และช่วยเรื่องความสุขสบายหลังผ่าตัด</li>
+      </ul>
+    </div>
+  </div>
+  <h2 id="p1ad9b89b226dr0_1-f71ed414" style="position:absolute; top:149px; left:50%; width:1664px; font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d; transform:translateX(-50%)">ทำไมต้องมีหมอนกางขา</h2>
+</section>
+<section class="slide" id="t1" data-transition="fade" style="background:#F3F8F8;color:#1F3A4D;font-family:'Sarabun', Tahoma, sans-serif;padding:104px 128px 112px;display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:26px;font-weight:600;color:#3E8E9A">1 · Hip Positioning and Dislocation Prevention</p>
+<h2 style="font-family:'Kanit', Tahoma, sans-serif;font-size:56px;font-weight:600;line-height:1.15;color:#1F3A4D">ทฤษฎีการจัดท่าเพื่อป้องกันข้อสะโพกเทียมเคลื่อนหลุด</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px;align-items:stretch">
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:40px 44px;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:42px;font-weight:600;color:#3E8E9A">หลักการ</h3>
+<p style="font-size:35px;line-height:1.5">ข้อสะโพกเป็นข้อต่อแบบ ball and socket หลังผ่าตัด THA ด้วย posterior approach เนื้อเยื่อรอบข้อยังอยู่ในระยะฟื้นตัว จึงเสี่ยงต่อข้อเคลื่อนหลุด</p>
+<p style="font-size:35px;font-weight:600;color:#B83A2E">ท่าที่ต้องหลีกเลี่ยง</p>
+<ul style="font-size:35px;line-height:1.5">
+<li>งอสะโพกเกิน 90 องศา</li>
+<li>หุบขาข้ามแนวกึ่งกลางลำตัว</li>
+<li>หมุนสะโพกเข้าด้านใน</li>
+</ul>
+</div>
+<div style="flex:1;background:#1F3A4D;color:#F3F8F8;border-radius:24px;padding:40px 44px;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:42px;font-weight:600;color:#9FD0D6">งานวิจัยสนับสนุน</h3>
+<ul style="font-size:33px;line-height:1.5">
+<li>Chan และคณะ (2025) scoping review: มีหลักฐานสนับสนุนการใช้อุปกรณ์ประคองขาช่วงเคลื่อนย้ายจากเตียงผ่าตัดไปเตียงผู้ป่วย</li>
+<li>Eslam Pour และคณะ (2023): กางสะโพกประมาณ 20 องศา ลดการชนกันของกระดูกกับข้อเทียม (impingement) ในแบบจำลองคอมพิวเตอร์</li>
+</ul>
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:42px;font-weight:600;color:#9FD0D6">การประยุกต์ใช้กับนวัตกรรม</h3>
+<p style="font-size:33px;line-height:1.5">รองรับขาทั้งสองข้าง ประคองแนวขาและสะโพก ลดการหุบขา ปรับตำแหน่งตามข้อจำกัดของผู้ป่วยแต่ละราย</p>
+</div>
+</div>
+</section>
+<section class="slide" id="t2" data-transition="fade" style="background:#f3f8f8">
+  <div id="pcd38309129der0-fbc722ec" style="position:absolute; top:104px; left:128px; width:1664px; height:109px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">2 · Elevation Therapy</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; line-height:1.15; color:#1f3a4d">ทฤษฎีการยกอวัยวะส่วนปลายสูงเพื่อลดอาการบวม</h2>
+  </div>
+  <div id="964791d2" style="position:absolute; top:249px; left:128px; width:883px; height:720px; display:flex; flex-direction:column; gap:16px; padding:40px 44px; background:#ffffff; border-radius:24px">
+    <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#3e8e9a">หลักการ</h3>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">ภายหลังผ่าตัดอาจบวมจากการตอบสนองต่อการอักเสบ หลอดเลือดฝอยซึมผ่านมากขึ้น และสารน้ำคั่งในช่องว่างระหว่างเซลล์ การยกขาสูงอย่างเหมาะสมช่วย</p>
+    <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">
+      <li>ลดแรงดัน Hydrostatic pressure ในหลอดเลือดดำส่วนปลาย</li>
+      <li>ส่งเสริมการไหลกลับของเลือดดำ</li>
+      <li>ช่วยระบายของเหลวผ่านระบบน้ำเหลือง</li>
+      <li>ลดการคั่งของสารน้ำบริเวณปลายขา</li>
+    </ul>
+  </div>
+  <div id="pcd38309129der1_1-fbc722ec" style="position:absolute; top:249px; left:1042px; width:750px; height:720px; display:flex; flex-direction:column; gap:16px; padding:40px 44px; background:#1f3a4d; border-radius:24px">
+    <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#9fd0d6">การประยุกต์ใช้กับนวัตกรรม</h3>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#f3f8f8">Hip B(lock) Ultra Smooth ออกแบบให้สามารถรองรับขา ล็อกขาให้อยู่กับที่และสามารถยกปลายเท้าสูงได้ เพื่อไม่ทำให้ข้อสะโพกเสี่ยงต่อการเลื่อนหลุด และเพิ่มการไหลเวียนเลือดดำกลับสู่หัวใจ</p>
+  </div>
+</section>
+<section class="slide" id="t3" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">3 · Stability and Support Theory</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; line-height:1.15; color:#1f3a4d">ทฤษฎีความมั่นคงและการรองรับอวัยวะ</h2>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px; flex:1">
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:40px 44px; background:#ffffff; border-radius:24px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#3e8e9a">หลักการ</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">ข้อสะโพกต้องมั่นคง โดยเฉพาะขณะ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">
+        <li>เปลี่ยนท่า พลิกตะแคง</li>
+        <li>เคลื่อนย้ายจากเตียงไปรถเข็นหรือเปล</li>
+      </ul>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">การเคลื่อนไหวที่ไม่สัมพันธ์กันของลำตัวและขา ทำให้เกิดแรงบิดต่อข้อสะโพก ข้อจึงไม่มั่นคงและมีโอกาสเลื่อนหลุด</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:40px 44px; background:#1f3a4d; border-radius:24px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#9fd0d6">งานวิจัยสนับสนุน</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#f3f8f8">Chan และคณะ (2025) เป็น scoping review เกี่ยวกับข้อควรระวังหลังผ่าตัด THA มีการสนับสนุนการใช้อุปกรณ์ประคองขาในการเคลื่อนย้ายผู้ป่วยจากเตียงผ่าตัด เป็นช่วงที่ควรให้ความสำคัญแนวขาเป็นพิเศษ&nbsp;</p>
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#9fd0d6">การประยุกต์ใช้กับนวัตกรรม</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#f3f8f8">ออกแบบ Hip B(lock) Ultra Smooth ให้มีฐานรองรับมั่นคง มีพื้นที่รองรับขาเหมาะสม และสามารถช่วยประคองขาไม่ให้เคลื่อนออกจากตำแหน่งขณะเคลื่อนย้ายผู้ป่วย จะช่วยเพิ่มความความปลอดภัยและลดการเคลื่อนไหวไม่พึงประสงค์</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="t4" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">4 · Friction and Shear Force</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; line-height:1.15; color:#1f3a4d">ทฤษฎีแรงเสียดทานและแรงเฉือน</h2>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px; flex:1">
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:40px 44px; background:#ffffff; border-radius:24px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#3e8e9a">หลักการ</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">การเสียดสีระหว่างผิวหนังกับพื้นผิวรองรับขณะเคลื่อนย้าย ทำให้เกิด</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">
+        <li><b>แรงเสียดทาน (friction)</b> แรงที่ต้านการเคลื่อนที่ระหว่างพื้นผิว 2 ชนิด</li>
+        <li><b>แรงเฉือน (shear force)</b> แรงที่ทำให้เนื้อเยื่อเคลื่อนตัวในทิศทางขนานกับพื้นผิว</li>
+      </ul>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#1f3a4d">ส่งผลให้เกิดผิวหนังระคายเคือง ความไม่สุขสบาย และเพิ่มความเสี่ยงต่อการบาดเจ็บเนื้อเยื่อ</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:40px 44px; background:#1f3a4d; border-radius:24px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#9fd0d6">งานวิจัยสนับสนุน</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#f3f8f8">Schwartz และคณะ (2018): &nbsp;พบว่า ความชื้นทำให้ค่าสัมประสิทธิ์แรงเสียดทานเพิ่มขึ้น อาจเพิ่มแรงเฉือนต่อผิวหนังและเนื้อเยื่อชั้นลึก</p>
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#9fd0d6">การประยุกต์ใช้กับนวัตกรรม</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#f3f8f8">หุ้มด้วยผ้าซาตินผิวเรียบลื่น ลดแรงต้านขณะเคลื่อนย้ายขาและจัดท่า ลดการเสียดสีบริเวณผิวหนัง</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="materials" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">06 · ทรัพยากรที่ใช้</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">วัสดุ 6 อย่าง หาได้ง่ายในหน่วยงาน</h2>
+  </div>
+  <div style="display:grid; gap:24px; grid-template-columns:1fr 1fr 1fr">
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/9019a42ce6ca0cc97d78da2e689cfb66.png" alt="ฟองน้ำความหนาแน่นสูง" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">ฟองน้ำความหนาแน่นสูง</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/b19d598627f3d3755e571bfe1b80e918.png" alt="ผ้าซาตินสีเขียว" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">ผ้าซาติน</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/0fb5f0d13bc089d7b89eae11f111823a.png" alt="แถบตีนตุ๊กแก" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">เทปหนามเตย</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/b4ca7ff8eaf5e680ce084fc1c42da95c.png" alt="ซิป" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">ซิป</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/f795f570ae90b43210d194dbc94db7ca.png" alt="กระดาษลัง" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">กระดาษลัง</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; padding:16px; background:#ffffff; border-radius:20px">
+      <img src="media/99a7dd3af156ef32066a1aedc274bcdc.png" alt="ฟิล์มยืดถนอมอาหาร" style="width:510px; height:270px; border-radius:12px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">ฟิล์มยืดถนอมอาหาร</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="material-props" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">06 · ทรัพยากรที่ใช้</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">วัสดุหลัก 2 อย่าง และเหตุผลที่เลือก</h2>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px">
+    <div style="display:flex; flex-direction:column; gap:20px; flex:1; padding:28px; background:#ffffff; border-radius:24px">
+      <img src="media/9019a42ce6ca0cc97d78da2e689cfb66.png" alt="ฟองน้ำความหนาแน่นสูง" style="object-position:50% 28.504%; width:772px; height:300px; border-radius:16px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#1f3a4d">6.1 ฟองน้ำความหนาแน่นสูง (high-density foam)</h3>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#1f3a4d">
+        <li><b>รองรับน้ำหนักและแรงกดทับได้ดี</b> รักษาความสูงและมุมของขาให้คงที่</li>
+        <li><b>คงรูปและคืนตัวได้เร็ว</b> ไม่ยุบตัวง่ายแม้รับน้ำหนักมาก</li>
+        <li><b>ทนทานสูง</b> อายุการใช้งานยาวนาน</li>
+      </ul>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; flex:1; padding:28px; background:#ffffff; border-radius:24px">
+      <img src="media/b19d598627f3d3755e571bfe1b80e918.png" alt="ผ้าซาตินสีเขียว" style="width:772px; height:300px; border-radius:16px">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; color:#1f3a4d">6.2 ผ้าซาติน</h3>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:33px; line-height:1.5; color:#1f3a4d">
+        <li><b>ผิวเรียบเนียน นุ่ม มีความลื่นสูง</b> ลดแรงเสียดทาน (friction) และแรงเฉือน (shear)</li>
+        <li><b>ระบายอากาศได้ดี</b> ไม่ยับ ซักง่าย ไม่ดูดซับสิ่งสกปรก</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="slide" id="why-green" data-transition="fade" style="background:#F3F8F8;color:#1F3A4D;font-family:'Sarabun', Tahoma, sans-serif;padding:104px 128px 112px;display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:26px;font-weight:600;color:#3E8E9A">06 · ทรัพยากรที่ใช้</p>
+<h2 style="font-family:'Kanit', Tahoma, sans-serif;font-size:60px;font-weight:600;line-height:1.15;color:#1F3A4D">ทำไมถึงใช้สีเขียว ?</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px;align-items:stretch">
+<img src="media/b19d598627f3d3755e571bfe1b80e918.png" alt="ผ้าซาตินสีเขียวที่ใช้หุ้มหมอน" style="width:560px;height:700px;object-fit:cover;border-radius:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:28px 40px;display:flex;flex-direction:column;justify-content:center;gap:8px;border-left:12px solid #2E7D4F">
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:40px;font-weight:600;color:#2E7D4F">ทางจิตวิทยา</h3>
+<p style="font-size:33px;line-height:1.45">ให้ความรู้สึกสงบ สดชื่น มีชีวิตชีวา</p>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:28px 40px;display:flex;flex-direction:column;justify-content:center;gap:8px;border-left:12px solid #2E7D4F">
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:40px;font-weight:600;color:#2E7D4F">ทางศาสตร์จีน</h3>
+<p style="font-size:33px;line-height:1.45">ช่วยฟื้นฟูพลังงานในร่างกาย บรรเทาความเครียด และสร้างความรู้สึกร่มเย็นเป็นสุข</p>
+</div>
+<div style="flex:1;background:#FFFFFF;border-radius:24px;padding:28px 40px;display:flex;flex-direction:column;justify-content:center;gap:8px;border-left:12px solid #2E7D4F">
+<h3 style="font-family:'Kanit', Tahoma, sans-serif;font-size:40px;font-weight:600;color:#2E7D4F">ทางการแพทย์</h3>
+<p style="font-size:33px;line-height:1.45">ช่วยปรับสมดุลสายตา ทำให้ดวงตาผ่อนคลาย ลดความพร่ามัวและเมื่อยล้าของดวงตา</p>
+</div>
+</div>
+</div>
+</section>
+<section class="slide" id="budget" data-transition="fade" style="display:flex; flex-direction:column; gap:36px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">06 · งบประมาณที่ใช้</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ต้นทุนรวมเพียง 613 บาท</h2>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:40px; flex:1">
+    <div style="display:flex; flex-direction:column; flex:2; padding:32px 44px; background:#ffffff; border-radius:24px">
+      <table style="font-family:Sarabun, Tahoma, sans-serif; font-size:36px; color:#1f3a4d">
+        <tr><th style="width:72%">รายการ</th><th style="width:28%; text-align:right">ราคา</th></tr>
+        <tr><td>1. ฟองน้ำความหนาแน่นสูง (high-density foam)</td><td style="text-align:right">400 บาท</td></tr>
+        <tr><td>2. ผ้าซาติน เมตรละ 40 บาท × 3 เมตร</td><td style="text-align:right">120 บาท</td></tr>
+        <tr><td>3. เทปหนามเตย (จาก Star sleeve)</td><td style="text-align:right">ฟรี</td></tr>
+        <tr><td>4. ซิป</td><td style="text-align:right">66 บาท</td></tr>
+        <tr><td>5. กระดาษลัง (จากกล่องพัสดุในหน่วยงาน)</td><td style="text-align:right">ฟรี</td></tr>
+        <tr><td>6. ฟิล์มยืดถนอมอาหาร</td><td style="text-align:right">27 บาท</td></tr>
+        <tr style="background:#dcebee"><td>รวม</td><td style="text-align:right">613 บาท</td></tr>
+      </table>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center; flex:1; padding:48px; background:#1f3a4d; border-radius:24px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:150px; font-weight:600; line-height:1.1; color:#9fd0d6">613</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:44px; font-weight:600; color:#f3f8f8">บาท ต่อชุด</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:30px; line-height:1.4; text-align:center; color:#bfd8dc">ได้วัสดุฟรี 2 รายการ</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="steps" data-transition="fade" style="background:#f3f8f8">
+  <div id="pdc8a3ce0a6e1r0-0266086c" style="position:absolute; top:96px; left:128px; width:1664px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการดำเนินงาน</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ขั้นตอนการดำเนินงาน</h2>
+  </div>
+  <div id="pdc8a3ce0a6e1r1-0266086c" style="position:absolute; top:217px; left:128px; width:1664px; height:751px; display:flex; flex-direction:row; gap:16px">
+    <div style="position:relative; display:flex; flex-direction:column; gap:26px; justify-content:center; flex:1; align-self:stretch; padding:52px 44px; background:linear-gradient(160deg, #eaf5f6 0%, #c9e4e8 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d1f; overflow:hidden">
+      <div style="width:104px; height:104px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:52px; box-shadow:0 8px 20px #1f3a4d1a">
+        <span class="x-icon" style="width:56px; height:56px; color:#3e8e9a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:50px; font-weight:600; line-height:1.2; color:#1f3a4d">วางแผน</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; line-height:1.45; color:#1f3a4d">จัดประชุมกลุ่มและวางแผนการดำเนินโครงการ</p>
+      <p style="position:absolute; top:16px; right:32px; width:200px; font-family:Kanit, Tahoma, sans-serif; font-size:200px; font-weight:700; line-height:1; text-align:right; color:#3e8e9a; opacity:0.12">1</p>
+    </div>
+    <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:32px; box-shadow:0 6px 16px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:34px; height:22px; background:#3e8e9a"></span>
+    </div>
+    <div style="position:relative; display:flex; flex-direction:column; gap:26px; justify-content:center; flex:1; align-self:stretch; padding:52px 44px; background:linear-gradient(160deg, #357f8c 0%, #24596a 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d2e; overflow:hidden">
+      <p style="width:190px; padding:6px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#bfe3e8; border-radius:40px">ขั้นตอนที่ 2</p>
+      <div style="width:104px; height:104px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:52px; box-shadow:0 8px 20px #00000026">
+        <span class="x-icon" style="width:56px; height:56px; color:#2f6f7d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:50px; font-weight:600; line-height:1.2; color:#ffffff">ทบทวนปัญหา</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; line-height:1.45; color:#eef7f8">ทบทวนอุบัติการณ์ข้อสะโพกเทียมเคลื่อนหลุด (dislocation) หลังผ่าตัดในช่วง 3 ปี (2566–2568)</p>
+      <p style="position:absolute; top:16px; right:32px; width:200px; font-family:Kanit, Tahoma, sans-serif; font-size:200px; font-weight:700; line-height:1; text-align:right; color:#ffffff; opacity:0.1">2</p>
+    </div>
+    <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:32px; box-shadow:0 6px 16px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:34px; height:22px; background:#24596a"></span>
+    </div>
+    <div style="position:relative; display:flex; flex-direction:column; gap:26px; justify-content:center; flex:1; align-self:stretch; padding:52px 44px; background:linear-gradient(160deg, #24475c 0%, #142a39 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d40; overflow:hidden">
+      <p style="width:190px; padding:6px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#9fd0d6; border-radius:40px">ขั้นตอนที่ 3</p>
+      <div style="width:104px; height:104px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:52px; box-shadow:0 8px 20px #00000033">
+        <span class="x-icon" style="width:56px; height:56px; color:#1f3a4d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></span>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:50px; font-weight:600; line-height:1.2; color:#ffffff">ออกแบบนวัตกรรม</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; line-height:1.45; color:#e3f1f3">ออกแบบ Hip B(Lock) Ultra Smooth และพัฒนาอย่างต่อเนื่องด้วยวงจร PDCA 3 รอบ</p>
+      <p style="position:absolute; top:16px; right:32px; width:200px; font-family:Kanit, Tahoma, sans-serif; font-size:200px; font-weight:700; line-height:1; text-align:right; color:#9fd0d6; opacity:0.12">3</p>
+    </div>
+  </div>
+  <p id="pdc8a3ce0a6e1r1_0_0_0-0266086c" style="position:absolute; top:358px; left:172px; width:190px; padding:6px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#f3f8f8; background:#3e8e9a; border-radius:40px">ขั้นตอนที่ 1</p>
+</section>
+<section class="slide" id="timeline" data-transition="fade" style="background:#f3f8f8">
+  <div id="p4d0653a70a6er0-c037b5d2" style="position:absolute; top:96px; left:112px; width:1696px; height:178px; display:flex; flex-direction:column; gap:12px">
+    <div style="display:flex; flex-direction:column; gap:8px">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ระยะเวลาการดำเนินการ</p>
+      <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">12 ตุลาคม – 11 พฤศจิกายน 2569</h2>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:35px; line-height:1.5; color:#5b7383">ทดลองใช้ในหน่วยผ่าตัดออร์โธปิดิคส์ โรงพยาบาลศิริราช</p>
+  </div>
+  <div id="p4d0653a70a6er1-c037b5d2" style="position:absolute; top:306px; left:112px; width:1696px; height:671px; display:grid; gap:10px; row-gap:0; align-items:center; grid-template-columns:600px 1fr 1fr 1fr 1fr 1fr; grid-template-rows:72px 1fr 1fr 1fr 1fr 1fr 1fr; padding:28px 40px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+    <div style="flex:1"></div>
+    <div style="display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+    </div>
+  </div>
+  <p id="p4d0653a70a6er1_1-c037b5d2" style="position:absolute; top:344px; left:762px; width:194px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">12–15 ต.ค.</p>
+  <p id="p4d0653a70a6er1_2-c037b5d2" style="position:absolute; top:344px; left:965px; width:194px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">19–22 ต.ค.</p>
+  <p id="p4d0653a70a6er1_3-c037b5d2" style="position:absolute; top:344px; left:1168px; width:194px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">26–30 ต.ค.</p>
+  <p id="p4d0653a70a6er1_4-c037b5d2" style="position:absolute; top:344px; left:1372px; width:194px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">2–6 พ.ย.</p>
+  <p id="p4d0653a70a6er1_5-c037b5d2" style="position:absolute; top:344px; left:1575px; width:194px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">9–11 พ.ย.</p>
+  <div id="p4d0653a70a6er1_6-c037b5d2" style="position:absolute; top:421px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #9fd0d6 0%, #6fb7c1 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#1f3a4d">1</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">เขียนโครงการและวางแผนงาน</p>
+  </div>
+  <div id="p4d0653a70a6er1_7-c037b5d2" style="position:absolute; top:429px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #9fd0d6 0%, #6fb7c1 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+  <div id="p4d0653a70a6er1_8-c037b5d2" style="position:absolute; top:429px; left:965px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_9-c037b5d2" style="position:absolute; top:429px; left:1168px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_10-c037b5d2" style="position:absolute; top:429px; left:1372px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_11-c037b5d2" style="position:absolute; top:429px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_12-c037b5d2" style="position:absolute; top:511px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#1f3a4d">2</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">ประชุมมอบหมายงาน</p>
+  </div>
+  <div id="p4d0653a70a6er1_13-c037b5d2" style="position:absolute; top:519px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_14-c037b5d2" style="position:absolute; top:519px; left:965px; width:93.17px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+  <div id="p4d0653a70a6er1_15-c037b5d2" style="position:absolute; top:519px; left:1168px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_16-c037b5d2" style="position:absolute; top:519px; left:1372px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_17-c037b5d2" style="position:absolute; top:519px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_18-c037b5d2" style="position:absolute; top:602px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #3e8e9a 0%, #2f6275 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">3</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">จัดเตรียมวัสดุที่ใช้</p>
+  </div>
+  <div id="p4d0653a70a6er1_19-c037b5d2" style="position:absolute; top:610px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_20-c037b5d2" style="position:absolute; top:610px; left:1058.17px; width:100.83px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #3e8e9a 0%, #2f6275 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+  <div id="p4d0653a70a6er1_22-c037b5d2" style="position:absolute; top:610px; left:1372px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_23-c037b5d2" style="position:absolute; top:610px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_24-c037b5d2" style="position:absolute; top:692px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #357f8c 0%, #24596a 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">4</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">ดำเนินงาน</p>
+  </div>
+  <div id="p4d0653a70a6er1_25-c037b5d2" style="position:absolute; top:700px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_26-c037b5d2" style="position:absolute; top:700px; left:965px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_27-c037b5d2" style="position:absolute; top:700px; left:1168px; width:101.69px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #357f8c 0%, #24596a 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+  <div id="p4d0653a70a6er1_28-c037b5d2" style="position:absolute; top:700px; left:1372px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_29-c037b5d2" style="position:absolute; top:700px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_30-c037b5d2" style="position:absolute; top:782px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #2b4e63 0%, #1f3a4d 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">5</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">ทดลองใช้และปรับปรุงแก้ไข</p>
+  </div>
+  <div id="p4d0653a70a6er1_31-c037b5d2" style="position:absolute; top:790px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_32-c037b5d2" style="position:absolute; top:790px; left:965px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_33-c037b5d2" style="position:absolute; top:790px; left:1168px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_34-c037b5d2" style="position:absolute; top:790px; left:1269.69px; width:296.31px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #2b4e63 0%, #1f3a4d 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+  <div id="p4d0653a70a6er1_35-c037b5d2" style="position:absolute; top:790px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_36-c037b5d2" style="position:absolute; top:873px; left:152px; width:600px; height:60px; display:flex; flex-direction:row; gap:20px; align-items:center">
+    <div style="width:60px; height:60px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:linear-gradient(160deg, #24475c 0%, #142a39 100%); border-radius:30px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">6</p>
+    </div>
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">สรุปและประเมินผลงาน</p>
+  </div>
+  <div id="p4d0653a70a6er1_37-c037b5d2" style="position:absolute; top:881px; left:762px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_38-c037b5d2" style="position:absolute; top:881px; left:965px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_39-c037b5d2" style="position:absolute; top:881px; left:1168px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_40-c037b5d2" style="position:absolute; top:881px; left:1372px; width:194px; height:44px; display:flex; flex-direction:column; background:#f3f8f8; border-radius:22px">
+  </div>
+  <div id="p4d0653a70a6er1_41-c037b5d2" style="position:absolute; top:881px; left:1575px; width:194px; height:44px; display:flex; flex-direction:column; background:linear-gradient(90deg, #24475c 0%, #142a39 100%); border-radius:22px; box-shadow:0 6px 14px #1f3a4d26">
+  </div>
+</section>
+<section class="slide" id="pdca-intro" data-transition="fade" style="background:#F3F8F8;color:#1F3A4D;font-family:'Sarabun', Tahoma, sans-serif;padding:96px 112px 96px 140px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:56px">
+<div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#1F3A4D"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการดำเนินงาน</p>
+<h2 style="font-family:'Kanit', Tahoma, sans-serif;font-size:72px;font-weight:600;line-height:1.25;color:#1F3A4D">ประเด็นการพัฒนาอย่างต่อเนื่องในแต่ละรอบของ CQI โดยใช้หลัก PDCA</h2>
+<div style="display:flex;flex-direction:column;gap:14px">
+<p style="font-size:34px;font-weight:600;color:#3E8E9A">รอบที่ 1 &#160;ค้นหาปัญหาและพัฒนาต้นแบบ</p>
+<p style="font-size:34px;font-weight:600;color:#3E8E9A">รอบที่ 2 &#160;ทดลองใช้และปรับปรุงประสิทธิภาพ</p>
+<p style="font-size:34px;font-weight:600;color:#3E8E9A">รอบที่ 3 &#160;พัฒนาอย่างต่อเนื่อง</p>
+</div>
+</div>
+<div style="position:relative;width:860px;height:860px;flex-shrink:0">
+<img src="media/4fe83e4fd421c931805fc490f86a7b48.png" alt="วงล้อ PDCA ลูกศรโค้ง 4 ส่วน หมุนตามเข็มนาฬิกา" style="position:absolute;left:0;top:0;width:860px;height:860px">
+<div style="position:absolute;left:118px;top:148px;width:220px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:92px;font-weight:700;line-height:1;color:#FFFFFF;text-align:center">P</p>
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:26px;font-weight:600;line-height:1.2;color:#FFFFFF;text-align:center">Plan<br>วางแผน</p></div>
+<div style="position:absolute;left:522px;top:148px;width:220px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:92px;font-weight:700;line-height:1;color:#FFFFFF;text-align:center">D</p>
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:26px;font-weight:600;line-height:1.2;color:#FFFFFF;text-align:center">Do<br>ดำเนินการ</p></div>
+<div style="position:absolute;left:522px;top:552px;width:220px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:92px;font-weight:700;line-height:1;color:#1F3A4D;text-align:center">C</p>
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:26px;font-weight:600;line-height:1.2;color:#1F3A4D;text-align:center">Check<br>ตรวจสอบ</p></div>
+<div style="position:absolute;left:118px;top:552px;width:220px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:92px;font-weight:700;line-height:1;color:#1F3A4D;text-align:center">A</p>
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:26px;font-weight:600;line-height:1.2;color:#1F3A4D;text-align:center">Act<br>ปรับปรุง</p></div>
+<div style="position:absolute;left:280px;top:280px;width:300px;height:300px;background:#FFFFFF;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(31,58,77,0.15)">
+<p style="font-family:'Kanit', Tahoma, sans-serif;font-size:52px;font-weight:600;line-height:1.2;color:#1F3A4D;text-align:center">CQI<br>3 รอบ</p></div>
+</div>
+</section>
+<section class="slide" id="pdca1" data-transition="fade" style="background:#f3f8f8">
+  <div id="pa2459ce9a386r0-eae65b44" style="position:absolute; top:80px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · PDCA รอบที่ 1</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ค้นหาปัญหาและพัฒนาต้นแบบ</h2>
+  </div>
+  <div id="pa2459ce9a386r1-eae65b44" style="position:absolute; top:201px; left:112px; width:1696px; height:775px; display:flex; flex-direction:row; gap:12px">
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d38">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#1f3a4d">P</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Plan<br>วางแผน</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#e6f1f3">
+        <li>รวบรวมข้อมูลสถิติและทบทวนอุบัติการณ์ความเสี่ยงจากการจัดท่าผู้ป่วยที่ต้องกางขาหลังผ่าตัด</li>
+        <li>ออกแบบหมอนกางขาให้มีฐานกว้างและองศาพอดี เพื่อเป็นแกนกลาง (Blocker)</li>
+        <li>ออกแบบบล็อกล็อกขาข้างที่ผ่าตัดสูง 45 องศาเพื่อเพิ่มการไหลเวียนกลับหลอดเลือดดำ</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2b4e63"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d2e">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">D</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Do<br>ดำเนินการ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#f0f8f9">
+        <li>สร้างต้นแบบ (prototype) หมอนสามเหลี่ยมกางขา ทดลองใช้ในเคสผ่าตัด</li>
+        <li>กำหนดสเปกหมอนกางขา ให้มีฐานกว้าง และทำมุมองศาพอดีกับการพยุงขา</li>
+        <li>ใช้ฟองน้ำนุ่ม&nbsp;</li>
+        <li>หุ้มด้วยผ้าซาติน ลดแรงเสียดทานบริเวณข้อพับขา</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2a6873"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #b5dde2 0%, #8cc5cd 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d24">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">C</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Check<br>ตรวจสอบ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <li>ประเมินประสิทธิภาพเบื้องต้น พบว่าการต้านทานน้ำหนักขา มีการยุบตัวของวัสดุที่อาจทำให้ขาหุบเข้าหากัน (adduction drift)</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#6fb7c1"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #eef7f8 0%, #d3e9ec 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#3e8e9a">A</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Act<br>ปรับปรุง</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <li>วัสดุเดิมรับน้ำหนักไม่พอ เปลี่ยนเป็นฟองน้ำความหนาแน่นสูง (high-density foam) ไม่ยุบตัว คืนตัวดี กระจายแรงกดทับได้ดี</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="slide" id="pdca2" data-transition="fade" style="background:#f3f8f8">
+  <div style="position:absolute; top:80px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · PDCA รอบที่ 2</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ทดลองใช้จริงและปรับปรุงประสิทธิภาพ</h2>
+  </div>
+  <div style="position:absolute; top:201px; left:112px; width:1696px; height:775px; display:flex; flex-direction:row; gap:12px">
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d38">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#1f3a4d">P</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Plan<br>วางแผน</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#e6f1f3">
+        <li>นำข้อเสนอแนะจากรอบที่ 1 มากำหนดแนวทางทดลองใช้หมอนกางขาที่สามารถล็อกขาและสามรถช่วยยกขาสูง มาทดลองใช้จริง</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2b4e63"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d2e">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">D</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Do<br>ดำเนินการ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#f0f8f9">
+        <li>ทดลองใช้ต้นแบบที่ปรับปรุงแล้วในห้องผ่าตัด</li>
+        <li>ทดลองใช้ขณะเคลื่อนย้ายผู้ป่วย</li>
+        <li>นำไปตรวจสอบถ่ายภาพรังสี</li>
+        <li>ชี้แจงทีม สาธิตการวางหมอนกางขาที่สามารถล็อกขาและยกขาสูงได้ 45 องศา เพื่อล็อกองศาการกางขาให้ถูกต้อง</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2a6873"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #b5dde2 0%, #8cc5cd 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d24">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">C</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Check<br>ตรวจสอบ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <li>ข้อสะโพกเคลื่อนหลุด/ขาหุบผิดรูป ขณะเคลื่อนย้าย ต้องเป็น 0 ครั้ง</li>
+        <li>การเกิดแผลกดทับระดับ 1 ขึ้นไป ต้องเป็น 0 ครั้ง</li>
+        <li>x-ray หลังผ่าตัดได้โดยไม่ใช้อุปกรณ์จัดท่าพิเศษ</li>
+        <li>สามรถใช้ได้ทั้งสองข้างหรือไม่</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#6fb7c1"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #eef7f8 0%, #d3e9ec 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#3e8e9a">A</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Act<br>ปรับปรุง</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <li>ปรับรูปแบบหมอนล้อกขาข้างที่ผ่าตัด ให้ใส่ได้ทั้งขาซ้ายและขวา ให้เหมาะกับสะโพกข้างที่ผ่าตัด</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="slide" id="pdca3" data-transition="fade" style="background:#f3f8f8">
+  <div style="position:absolute; top:80px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · PDCA รอบที่ 3</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">พัฒนาอย่างต่อเนื่อง</h2>
+  </div>
+  <div style="position:absolute; top:201px; left:112px; width:1696px; height:775px; display:flex; flex-direction:row; gap:12px">
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d38">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#1f3a4d">P</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Plan<br>วางแผน</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#e6f1f3">
+        <li>ทบทวนข้อมูลและปัญหาที่อาจเกิดขึ้นหลังการใช้งานจริงในระยะยาว ตั้งแต่ออกจากห้องผ่าตัด จนถึงห้องพักฟื้น</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2b4e63"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d2e">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">D</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#ffffff">Do<br>ดำเนินการ</p>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#f0f8f9">
+        <li>ปรับปรุงอุปกรณ์หรือกระบวนการดูแลตามข้อมูลจากการทบทวนอย่างเป็นระบบ</li>
+        <li>สามารถใช้อุปกรณ์ได้ทั้งขาซ้ายและขาขวา</li>
+      </ul>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#2a6873"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #b5dde2 0%, #8cc5cd 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d24">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2a6873">C</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Check<br>ตรวจสอบ</p>
+      <div data-text style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <ul>
+          <li>รวบรวมประเมินความพึงพอใจและการใช้งาน (usability &amp; ergonomics): ความสะดวกในการจัดท่า ความมั่นคงของอุปกรณ์</li>
+        </ul>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ขณะเคลื่อนย้ายไม่เกิด &nbsp;&nbsp;&nbsp;&nbsp;ข้อสะโพกเคลื่อนหลุด</p>
+      </div>
+    </div>
+    <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:26px; box-shadow:0 6px 14px #1f3a4d26">
+      <span class="x-shape k-arrow-right" style="width:28px; height:18px; background:#6fb7c1"></span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:18px; flex:1; padding:36px 30px; background:linear-gradient(160deg, #eef7f8 0%, #d3e9ec 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; align-self:center; background:#ffffff; border-radius:42px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#3e8e9a">A</p>
+      </div>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:38px; font-weight:600; line-height:1.2; text-align:center; color:#1f3a4d">Act<br>ปรับปรุง</p>
+      <div data-text style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; line-height:1.45; color:#1f3a4d">
+        <p></p>
+        <ul>
+          <li>ทำสื่อให้ความรู้ (โปสเตอร์/สื่อนำเสนอ) เป็นแนวทางมาตรฐาน</li>
+          <li>ขยายผลการใช้หมอนจากห้องพักฟื้นไปยังหอผู้ป่วย</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="e8c2d8f7" data-transition="fade" style="background:#f3f8f8">
+  <div style="position:absolute; top:72px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการประดิษฐ์ · รอบที่ 1</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ตัวต้นแบบ : หมอนฟองน้ำ</h2>
+  </div>
+  <div style="position:absolute; top:206px; left:112px; width:600px; height:790px; display:flex; flex-direction:column; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a; overflow:hidden">
+    <img src="media/a851b5f70acc3c066801b301abf6b79d.jpg" alt="ต้นแบบเวอร์ชัน 1 ฟองน้ำรูปสามเหลี่ยมกางขาและฟองน้ำรูปตัว U รองรับขา วางบนผ้าสีฟ้า" style="width:568px; height:758px; border-radius:18px">
+    <p style="position:absolute; top:40px; left:40px; padding:8px 24px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#ffffff; background:#1f3a4d; border-radius:40px; box-shadow:0 6px 14px #1f3a4d40">ต้นแบบ V1</p>
+  </div>
+  <div style="position:absolute; top:206px; left:752px; width:1056px; height:790px; display:flex; flex-direction:column; gap:28px">
+    <div style="display:flex; flex-direction:column; gap:22px; padding:36px 40px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d38">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; color:#9fd0d6">วิธีทำ</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; line-height:1.4; color:#f3f8f8">นำฟองน้ำลักษณะนุ่มมาออกแบบ</p>
+      <div style="display:flex; flex-direction:row; gap:20px">
+        <div style="display:flex; flex-direction:row; gap:20px; align-items:center; flex:1; padding:20px 24px; background:#ffffff14; border-radius:20px">
+          <div style="width:76px; height:76px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:#9fd0d6; border-radius:38px">
+            <p style="font-family:Kanit, Tahoma, sans-serif; font-size:40px; font-weight:700; line-height:1; color:#1f3a4d">▲</p>
+          </div>
+          <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; line-height:1.35; color:#ffffff">รูปสามเหลี่ยม<br>เพื่อให้กางขา</p>
+        </div>
+        <div style="display:flex; flex-direction:row; gap:20px; align-items:center; flex:1; padding:20px 24px; background:#ffffff14; border-radius:20px">
+          <div style="width:76px; height:76px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:#9fd0d6; border-radius:38px">
+            <p style="font-family:Kanit, Tahoma, sans-serif; font-size:40px; font-weight:700; line-height:1; color:#1f3a4d">U</p>
+          </div>
+          <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; font-weight:600; line-height:1.35; color:#ffffff">รูปตัว U<br>รองรับขา</p>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; flex:1; padding:36px 40px; background:#ffffff; border-left:12px solid #c0533f; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:44px; font-weight:600; color:#c0533f">ปัญหาที่พบ</h3>
+      <div style="display:flex; flex-direction:row; gap:22px; align-items:center; flex:1; padding:0 24px; background:#fbeeeb; border-radius:20px">
+        <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:#c0533f; border-radius:28px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">!</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.35; color:#1f3a4d">ฟองน้ำนุ่ม ทำให้ยุบตัวเมื่อใช้งาน</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:22px; align-items:center; flex:1; padding:0 24px; background:#fbeeeb; border-radius:20px">
+        <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:#c0533f; border-radius:28px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">!</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.35; color:#1f3a4d">ไม่สามารถประคองขาได้</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:22px; align-items:center; flex:1; padding:0 24px; background:#fbeeeb; border-radius:20px">
+        <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:#c0533f; border-radius:28px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">!</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.35; color:#1f3a4d">ไม่สามารถใช้ได้ทั้งสองข้าง</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="fabrication" data-transition="fade" style="display:flex; flex-direction:column; gap:32px; padding:96px 112px 104px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการประดิษฐ์ · รอบที่ 2</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">พัฒนาและปรับปรุง : หมอน 2 ชิ้น พร้อมปลอกหุ้มและสายรัดขา</h2>
+  </div>
+  <div style="display:grid; gap:24px; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr; flex:1">
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <img src="media/df96917d32fbb1ba2d6826954c50c166.jpg" alt="โฟมบล็อคล็อคขารูปตัว U และโฟมหมอนกางขาที่ตัดแล้ว วางบนพื้น" style="height:200px; align-self:center; border-radius:18px">
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #9fd0d6 0%, #6fb7c1 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#1f3a4d">1</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">ตัดฟองน้ำความหนาแน่นสูงเป็น<b>หมอนกางขา</b>ทรงสี่เหลี่ยมคางหมู ให้ขากางได้ 30 องศา</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <img src="media/2dd2ae7213ab190f56d6cee15a8c3db3.png" alt="โฟมบล็อคล็อคขา" style="height:200px; align-self:center; border-radius:18px">
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#ffffff">2</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">ตัด<b>บล็อคล็อคขา</b>รูปตัว U ร่องเว้าตามรูปขา เอียงขึ้น 45 &nbsp;องศา ทางปลายเท้าให้ส้นเท้าลอย</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <img src="media/4a194975888528c085675387ce8302c6.png" alt="ทดลองจัดท่า มุมบน" style="height:200px; align-self:center; border-radius:18px">
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #3e8e9a 0%, #2f6275 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#ffffff">3</p>
+        </div>
+        <p style="width:445px; font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">ทดลองจัดท่า ตรวจสอบให้ขาอยู่ในบล็อค ขาสามารถกางได้ ส้นเท้าลอย แล้วปรับขนาดให้พอดี</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <img src="media/4375040d2521a16720f9c64b04882989.jpg" alt="หมอนฟองน้ำ 2 ชิ้นหุ้มฟิล์มถนอมอาหาร" style="height:200px; align-self:center; border-radius:18px">
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #357f8c 0%, #24596a 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#ffffff">4</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">หุ้มฟองน้ำความหนาแน่นสูงด้วยแผ่นฟิล์มเพื่อกันน้ำและให้ใช้งานได้นานขึ้น</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:row; gap:12px; justify-content:center">
+        <img src="media/2b1f487a37a339561b572083104b9f98.png" alt="บล็อคล็อคขาหุ้มปลอกผ้าซาติน" style="height:200px; border-radius:18px">
+        <img src="media/66bd963851db4cf66e4822a1dbe9e237.jpg" alt="หมอนกางขาหุ้มปลอกผ้าซาตินสีเขียวพร้อมสายรัด 2 เส้น" style="height:200px; border-radius:18px">
+      </div>
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #2b4e63 0%, #1f3a4d 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#ffffff">5</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">เย็บปลอกผ้าหุ้มหมอนทั้งสองชิ้น ด้วยผ้าซาติน มีซิปด้านบน ถอดซักและเช็ดทำความสะอาดได้</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; padding:16px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a">
+      <img src="media/18958898082741065f1fcde89bf9d767.jpg" alt="เย็บเทปหนามเตยสีขาวติดกับปลอกผ้าซาตินสีเขียวของหมอน" style="height:200px; align-self:center; border-radius:18px">
+      <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 8px">
+        <div style="width:52px; height:52px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #24475c 0%, #142a39 100%); border-radius:26px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:700; line-height:1; color:#ffffff">6</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:27px; line-height:1.4; color:#1f3a4d">เย็บเทปหนามเตยยึดสองชิ้นเข้าด้วยกัน สลับใช้ได้ทั้งขาซ้ายและขวา<br>เย็บสายรัดที่หมอนกางขา</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="fab-photos" data-transition="fade" style="background:#f3f8f8">
+  <div id="pefba30e6ec1fr0-2722a408" style="position:absolute; top:72px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการประดิษฐ์</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">&nbsp;โมเดล 3 มิติ เทียบ ของจริง</h2>
+  </div>
+  <div id="pefba30e6ec1fr1-2722a408" style="position:absolute; top:193px; left:112px; width:1696px; height:725px; display:grid; gap:24px; row-gap:20px; grid-template-columns:330px 1fr 1fr; grid-template-rows:58px 312px 312px">
+    <div style="flex:1"></div>
+    <p style="padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:600; text-align:center; color:#f3f8f8; background:#1f3a4d; border-radius:40px">โมเดล 3 มิติ&nbsp;</p>
+    <p style="padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:600; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:40px">ของจริง</p>
+    <div style="display:flex; flex-direction:column; gap:12px; justify-content:center; padding:28px 30px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d2e">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; line-height:1.2; color:#ffffff">หมอนกางขา</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; line-height:1.4; color:#e6f1f3">ทรงสี่เหลี่ยมคางหมู<br>A 16 · B 28 · C 48 ·<br>สูง 15 ซม.<br>ทำมุมให้กางขาได้ 30°</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a; overflow:hidden">
+      <div style="position:relative; width:362px; height:284px; display:flex; flex-direction:column">
+        <img src="media/af8f93618fc5847cda9fa24eecf68802.png" alt="โมเดล 3 มิติหมอนกางขาทรงคางหมูพร้อมสายรัด 2 เส้น" style="width:362px; height:284px; object-fit:contain">
+        <p style="position:absolute; top:5px; left:28px; width:90px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:22px; font-weight:600; line-height:1; text-align:center; color:#1f3a4d; background:#dcebee; border-radius:20px; box-shadow:0 4px 10px #1f3a4d33">A 16</p>
+        <p style="position:absolute; top:160px; left:229px; width:90px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:22px; font-weight:600; line-height:1; text-align:center; color:#ffffff; background:#1f3a4d; border-radius:20px; box-shadow:0 4px 10px #1f3a4d33">B 28</p>
+        <p style="position:absolute; top:125px; left:89px; width:90px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:22px; font-weight:600; line-height:1; text-align:center; color:#ffffff; background:#3e8e9a; border-radius:20px; box-shadow:0 4px 10px #1f3a4d33">C 48</p>
+        <p style="position:absolute; top:231px; left:164px; width:120px; padding:8px 0; font-family:Kanit, Tahoma, sans-serif; font-size:22px; font-weight:600; line-height:1; text-align:center; color:#1f3a4d; background:#ffffff; border-radius:20px; box-shadow:0 4px 10px #1f3a4d33">สูง 15</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a; overflow:hidden">
+      <img src="media/c0084b668537105e4ee8150d51255cde.png" alt="หมอนกางขาของจริงหุ้มผ้าซาตินพร้อมสายรัด" style="height:284px; border-radius:18px; object-fit:contain">
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; justify-content:center; padding:28px 30px; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:28px; box-shadow:0 14px 36px #1f3a4d2e">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; font-weight:600; line-height:1.2; color:#ffffff">บล็อคล็อคขา</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; line-height:1.4; color:#e6f1f3">รูปตัว U<br>ทำร่องเว้าตามรูปขา<br>เอียงขึ้นทางปลายเท้า ให้ส้นเท้าลอย</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a; overflow:hidden">
+      <img src="media/7ed0f9b31c7788478b45f24a22e8b3db.png" alt="โมเดล 3 มิติบล็อคล็อคขารูปตัว U" style="height:284px; object-fit:contain">
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d1a; overflow:hidden">
+      <img src="media/2b1f487a37a339561b572083104b9f98.png" alt="บล็อคล็อคขาของจริงหุ้มผ้าซาติน" style="height:284px; border-radius:18px; object-fit:contain">
+    </div>
+  </div>
+</section>
+<section class="slide" id="254122a3" data-transition="fade" style="background:#f3f8f8">
+  <div data-build-in="pop 1 auto" style="position:absolute; top:72px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ผลงาน</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ผลงาน Hip B(lock) Ultra Smooth</h2>
+  </div>
+  <div data-build-in="pop 1 auto" style="position:absolute; top:206px; left:112px; width:1032px; height:790px; display:flex; flex-direction:column; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/fea51510e4ac9e8c091a79d752c012ad.jpg" alt="หมอน 2 ชิ้นหุ้มผ้าซาตินสีเขียว พร้อมสายรัดขา 2 เส้น" style="width:1004px; height:762px; border-radius:18px; object-fit:cover">
+  </div>
+  <div data-build-in="pop 1 auto" style="position:absolute; top:206px; left:1176px; width:632px; height:383px; display:flex; flex-direction:column; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/07431bb3ee1abcb230de8cccc02652dd.jpg" alt="มุมข้าง: ขาวางบนบล็อคล็อคขา ปลายเท้ายกสูง ส้นเท้าลอยพ้นเตียง" style="width:604px; height:355px; border-radius:18px; object-fit:cover">
+  </div>
+  <div data-build-in="pop 1 auto" style="position:absolute; top:613px; left:1176px; width:632px; height:383px; display:flex; flex-direction:column; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/0846c29a7c4519011046a057dbe7df86.jpg" alt="มุมบน: จัดท่าจริงบนเตียง ขาวางในบล็อคล็อคขาและหมอนกางขา รัดด้วยสายรัด 2 เส้น" style="width:604px; height:355px; border-radius:18px; object-fit:cover">
+  </div>
+  <p data-build-in="pop 1 auto" style="position:absolute; top:910px; left:146px; padding:10px 28px; font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:600; color:#ffffff; background:#1f3a4d; border-radius:40px; box-shadow:0 6px 16px #1f3a4d4d">หมอน 2 ชิ้น พร้อมสายรัดขา</p>
+  <p data-build-in="pop 1 auto" style="position:absolute; top:515px; left:1206px; padding:8px 24px; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#ffffff; background:#1f3a4d; border-radius:40px; box-shadow:0 6px 16px #1f3a4d4d">มุมข้าง : ส้นเท้าลอยพ้นเตียง</p>
+  <p data-build-in="pop 1 auto" style="position:absolute; top:922px; left:1206px; padding:8px 24px; font-family:Kanit, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#ffffff; background:#1f3a4d; border-radius:40px; box-shadow:0 6px 16px #1f3a4d4d">มุมบน : จัดท่าจริงบนเตียง</p>
+</section>
+<section class="slide" id="usage" data-transition="fade" style="display:flex; flex-direction:column; gap:32px; padding:104px 128px 112px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการใช้งาน</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ขั้นตอนการใช้งาน</h2>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px; flex:1">
+    <div style="display:flex; flex-direction:column; justify-content:space-between; flex:2.1; padding:32px 36px; background:#ffffff; border-radius:24px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:row; gap:24px; align-items:center; padding:8px 12px">
+        <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:32px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">1</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; line-height:1.38; color:#1f3a4d">จัดผู้ป่วยนอนหงายราบ วางหมอนระหว่างขา ด้านแคบ อยู่ฝั่งต้นขา<br>ด้านกว้าง อยู่ฝั่งปลายเท้า ให้ขาข้างที่ผ่าตัดกาง 30 องศา</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:24px; align-items:center; padding:8px 12px">
+        <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #357f8c 0%, #24596a 100%); border-radius:32px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">2</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; line-height:1.38; color:#1f3a4d">ประกบหมอนยกขาติดกับหมอนกางขา&nbsp;<br>วางขาข้างผ่าตัดบนหมอนยกขา หนุนตั้งแต่ใต้ข้อพับเข่าจนถึงน่อง&nbsp;<br>หัวเข่าและปลายเท้าตั้งตรง&nbsp;</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:24px; align-items:center; padding:8px 12px">
+        <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:32px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">3</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; line-height:1.38; color:#1f3a4d">ล็อกแนวขาให้คงที่โดยใช้สายรัดขา รัดขาอีกข้างกับหมอน&nbsp;<br>หลีกเลี่ยงการหมุนขาข้างที่ผ่าตัดเข้าด้านใน&nbsp;</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:24px; align-items:center; padding:8px 12px; background:#e6f3f5; border-radius:16px">
+        <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:32px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">4</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; line-height:1.38; color:#1f3a4d">ตรวจสอบหลังการจัดท่า</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:24px; align-items:center; padding:8px 12px">
+        <div style="width:64px; height:64px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:32px">
+          <p style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:700; line-height:1; color:#ffffff">5</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:32px; line-height:1.38; color:#1f3a4d">เมื่อใช้เสร็จ ปลดสายรัด ตรวจสอบผิวหนัง ถอดปลอกหุ้ม เช็ดทำความสะอาดก่อนใช้กับผู้ป่วยรายต่อไป</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px; flex:1; padding:32px; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:24px; box-shadow:0 14px 36px #1f3a4d38">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:46px; font-weight:600; color:#9fd0d6">ตรวจทุกครั้ง</h3>
+      <div style="display:flex; flex-direction:row; gap:18px; align-items:center; flex:1; padding:12px 22px; background:#ffffff14; border-radius:18px">
+        <span class="x-icon" style="width:48px; height:48px; flex:0 0 auto; color:#9fd0d6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.3; color:#f3f8f8">ขาข้างที่ผ่าตัด<br>กางออก 30 องศา</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:18px; align-items:center; flex:1; padding:12px 22px; background:#ffffff14; border-radius:18px">
+        <span class="x-icon" style="width:48px; height:48px; flex:0 0 auto; color:#9fd0d6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.3; color:#f3f8f8">ข้อพับใต้เข่าไม่ถูกกด<br>และส้นเท้าลอย</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:18px; align-items:center; flex:1; padding:12px 22px; background:#ffffff14; border-radius:18px">
+        <span class="x-icon" style="width:48px; height:48px; flex:0 0 auto; color:#9fd0d6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.3; color:#f3f8f8">สายรัดไม่กด<br>หรือแน่นเกินไป</p>
+      </div>
+      <div style="display:flex; flex-direction:row; gap:18px; align-items:center; flex:1; padding:12px 22px; background:#ffffff14; border-radius:18px">
+        <span class="x-icon" style="width:48px; height:48px; flex:0 0 auto; color:#9fd0d6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.3; color:#f3f8f8">เข่าและปลายเท้า<br>ตั้งตรงขึ้นด้านบน</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="usage-anim" data-transition="fade" style="background:#f3f8f8">
+  <div style="position:absolute; top:64px; left:260px; width:1400px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ขั้นตอนการใช้งาน</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; line-height:1.15; color:#1f3a4d">ขั้นตอนการใช้งาน</h2>
+  </div>
+  <div style="position:absolute; top:196px; left:260px; width:1400px; height:816px; display:flex; flex-direction:column; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/a19ffb10c70ec0fb661a74fcc2dbc8f1.jpg" alt="แอนิเมชัน 3 มิติ 5 ขั้นตอนการจัดท่าด้วย Hip B(lock) Ultra Smooth พร้อมคำบรรยายภาษาไทย" data-video="media/04691b5bcba02d669ecf0ba7dd17eb7e.mp4" style="width:1372px; height:788px; border-radius:18px">
+  </div>
+</section>
+<section class="slide" id="0616860c" data-transition="fade" style="background:#f3f8f8">
+  <div data-build-in="fade 1 auto" style="position:absolute; top:72px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">07 · ผลการใช้งาน</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ผลการทดลอง Hip Block Ultra Smooth</h2>
+  </div>
+  <div data-build-in="rise 2 auto" style="position:absolute; top:230px; left:112px; width:480px; height:740px; display:flex; flex-direction:column; gap:22px; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/90a0858028068e6e32fa79a926143344.jpg" alt="ห้องเอกซเรย์ ผู้ป่วยนอนบนเตียงเปล ขาอยู่ในหมอนกางขาและบล็อคล็อคขา" style="width:452px; height:540px; border-radius:18px">
+    <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 10px">
+      <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #6fb7c1 0%, #3e8e9a 100%); border-radius:28px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">1</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.2; color:#1f3a4d">ห้องเอกซเรย์</h3>
+      </div>
+    </div>
+  </div>
+  <div data-build-in="rise 3 auto" style="position:absolute; top:230px; left:616px; width:688px; height:740px; display:flex; flex-direction:column; gap:22px; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/904e8d378d8fab0fdd11b0e1db34e5ae.jpg" alt="วิดีโอเจ้าหน้าที่สอดแผ่นรับภาพรังสีใต้ตัวผู้ป่วยที่ใส่ Hip Block บนเตียงเปล" data-video="media/7367e99d9d8177ec85a63ddce3d1e16b.mp4" style="width:660px; height:540px; border-radius:18px">
+    <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 10px">
+      <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #3e8e9a 0%, #2a6873 100%); border-radius:28px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">2</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.2; color:#1f3a4d">ทดลองใช้งานจริง</h3>
+      </div>
+    </div>
+  </div>
+  <div data-build-in="rise 4 auto" style="position:absolute; top:230px; left:1328px; width:480px; height:740px; display:flex; flex-direction:column; gap:22px; padding:14px; background:#ffffff; border-radius:28px; box-shadow:0 14px 36px #1f3a4d24; overflow:hidden">
+    <img src="media/9df5b6ea0b61664a93cca5aaa1bcacba.jpg" alt="ฟิล์มเอกซเรย์สะโพกหลังจัดท่าด้วย Hip Block" style="width:452px; height:540px; background:#14212b; border-radius:18px; object-fit:contain">
+    <div style="display:flex; flex-direction:row; gap:16px; align-items:start; padding:0 10px">
+      <div style="width:56px; height:56px; display:flex; flex-direction:row; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(160deg, #2b4e63 0%, #182f3f 100%); border-radius:28px">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:30px; font-weight:700; line-height:1; color:#ffffff">3</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:600; line-height:1.2; color:#1f3a4d">ฟิล์มเอกซเรย์</h3>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="slide" id="indicators" data-transition="fade" style="display:flex; flex-direction:column; gap:26px; padding:88px 112px 80px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">08 · ตัวชี้วัดผลสำเร็จ</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">ตัวชี้วัดผลสำเร็จของโครงการและผลลัพธ์</h2>
+  </div>
+  <div style="display:flex; flex-direction:column; justify-content:space-around; flex:1; padding:24px 40px; background:#ffffff; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+    <div style="display:grid; gap:20px; grid-template-columns:1fr 240px 380px; padding:8px 0 14px; border-bottom:2px solid #1f3a4d">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">ตัวชี้วัด</p>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:600; text-align:center; color:#1f3a4d">เป้าหมาย</p>
+      <p style="padding:0 0 0 60px; font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:600; color:#1f3a4d">ผลลัพธ์</p>
+    </div>
+    <div style="display:grid; gap:20px; align-items:center; grid-template-columns:1fr 240px 380px; padding:20px 0; border-bottom:1px solid #dcebee">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.3; color:#1f3a4d">1. อุบัติการณ์เกิดแผลกดทับระดับ 1 ขึ้นไปหลังใช้งานนวัตกรรม</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; text-align:center; color:#1f3a4d">0 ครั้ง</p>
+      <div style="display:flex; flex-direction:row; gap:14px; align-items:center; padding:0 0 0 60px">
+        <p style="flex:0 0 auto; padding:4px 18px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#ffffff; background:#2e7d4f; border-radius:30px">✓ ผ่าน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; font-weight:600; color:#2e7d4f">0 ครั้ง</p>
+      </div>
+    </div>
+    <div style="display:grid; gap:20px; align-items:center; grid-template-columns:1fr 240px 380px; padding:20px 0; border-bottom:1px solid #dcebee">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.3; color:#1f3a4d">2. อุบัติการณ์เกิดข้อสะโพกหลุดขณะเคลื่อนย้าย/พลิกตะแคง</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; text-align:center; color:#1f3a4d">0 ครั้ง</p>
+      <div style="display:flex; flex-direction:row; gap:14px; align-items:center; padding:0 0 0 60px">
+        <p style="flex:0 0 auto; padding:4px 18px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#ffffff; background:#2e7d4f; border-radius:30px">✓ ผ่าน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; font-weight:600; color:#2e7d4f">0 ครั้ง</p>
+      </div>
+    </div>
+    <div style="display:grid; gap:20px; align-items:center; grid-template-columns:1fr 240px 380px; padding:20px 0; border-bottom:1px solid #dcebee">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.3; color:#1f3a4d">3. อัตราการถ่ายภาพรังสีหลังผ่าตัดได้โดยไม่ใช้อุปกรณ์จัดท่าพิเศษ</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; text-align:center; color:#1f3a4d">&nbsp;100%</p>
+      <div style="display:flex; flex-direction:row; gap:14px; align-items:center; padding:0 0 0 60px">
+        <p style="flex:0 0 auto; padding:4px 18px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#ffffff; background:#2e7d4f; border-radius:30px">✓ ผ่าน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; font-weight:600; color:#2e7d4f">100%</p>
+      </div>
+    </div>
+    <div style="display:grid; gap:20px; align-items:center; grid-template-columns:1fr 240px 380px; padding:20px 0">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.3; color:#1f3a4d">4. ความพึงพอใจของบุคลากร</p>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; text-align:center; color:#1f3a4d">≥ ร้อยละ 85</p>
+      <div style="display:flex; flex-direction:row; gap:14px; align-items:center; padding:0 0 0 60px">
+        <p style="flex:0 0 auto; padding:4px 18px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#ffffff; background:#2e7d4f; border-radius:30px">✓ ผ่าน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; font-weight:600; color:#2e7d4f">ร้อยละ 87.1</p>
+      </div>
+    </div>
+  </div>
+  <div style="height:130px; display:flex; flex-direction:row; gap:28px; align-items:center; justify-content:center; flex:0 0 auto; background:linear-gradient(90deg, #2e7d4f 0%, #3e8e9a 100%); border-radius:32px; box-shadow:0 14px 36px #2e7d4f4d">
+    <div style="width:84px; height:84px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:42px">
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1; color:#2e7d4f">✓</p>
+    </div>
+    <p style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:700; line-height:1.1; color:#ffffff">ผ่านเกณฑ์ครบทั้ง 4 ตัวชี้วัด</p>
+  </div>
+  <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:28px; color:#5b7383">ผู้ป่วยหลังผ่าตัดเปลี่ยนข้อสะโพกเทียมที่ใช้ Hip B(Lock) Ultra Smooth</p>
+</section>
+<section class="slide" id="satisfaction" data-transition="fade" style="background:#f3f8f8">
+  <div id="p557334eac279r0-e27475bc" style="position:absolute; top:56px; left:112px; width:1696px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">08 · ผลการประเมินความพึงพอใจ</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:56px; font-weight:600; line-height:1.15; color:#1f3a4d">ความพึงพอใจต่อการใช้งาน</h2>
+  </div>
+  <div id="p557334eac279r1-e27475bc" style="position:absolute; top:172px; left:112px; width:1696px; height:828px; display:flex; flex-direction:row; gap:32px">
+    <div style="width:470px; display:flex; flex-direction:column; gap:20px; align-items:center; min-height:828px; padding:191px 40px 48px; background:linear-gradient(160deg, #2b4e63 0%, #142a39 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d40">
+      <p style="width:390px; font-family:Kanit, Tahoma, sans-serif; font-size:150px; font-weight:700; line-height:1; text-align:center; color:#ffffff">87.1<span style="color:#9fd0d6">%</span></p>
+    </div>
+    <div style="display:flex; flex-direction:column; justify-content:space-between; flex:1; padding:24px 32px; background:#ffffff; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:grid; gap:16px; grid-template-columns:1fr 90px 210px 120px; padding:0 12px 10px; border-bottom:2px solid #1f3a4d">
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; color:#1f3a4d">รายการประเมิน</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">ค่าเฉลี่ย</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">ร้อยละ</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">แปลผล</p>
+      </div>
+      <p style="padding:6px 12px; font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; color:#1f3a4d; background:#dcebee; border-radius:14px">1. ด้านการออกแบบและวัสดุ</p>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">1.1 ขนาดและรูปทรงเหมาะสมกับสรีระผู้ป่วย</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.3</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.86; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">86</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">1.2 วัสดุแข็งแรง คงรูป ไม่ยุบตัวขณะรองรับน้ำหนักขา</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.0</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.8; background:#9fd0d6; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">80</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มาก</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">1.3 ปลอกผ้าซาตินนุ่มลื่น ไม่ระคายเคืองผิวผู้ป่วย</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.5</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.9; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">90</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <p style="padding:6px 12px; font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; color:#1f3a4d; background:#dcebee; border-radius:14px">2. ด้านประสิทธิภาพในการดูแลและความปลอดภัยของผู้ป่วย</p>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">2.1 ประคองขาและล็อกองศาการกางขาได้มั่นคง ลดความเสี่ยงข้อสะโพกหลุด</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.3</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.86; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">86</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">2.2 บล็อคล็อคขายกปลายเท้าสูง ส้นเท้าลอยพ้นเตียง ลดความเสี่ยงแผลกดทับ</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.4</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.88; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">88</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">2.3 สายรัดตีนตุ๊กแกกระชับ มั่นคงขณะเคลื่อนย้าย ไม่รัดแน่นจนกดทับผิวหนัง</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.3</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.86; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">86</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <p style="padding:6px 12px; font-family:Kanit, Tahoma, sans-serif; font-size:24px; font-weight:600; color:#1f3a4d; background:#dcebee; border-radius:14px">3. ด้านความสะดวกในการปฏิบัติงานของบุคลากร</p>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">3.1 สลับใช้งานได้ทั้งขาซ้ายและขวาอย่างคล่องตัว</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.6</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.92; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">92</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">3.2 ถ่ายภาพรังสี x-ray หลังผ่าตัดได้ทันทีโดยไม่ต้องใช้อุปกรณ์จัดท่าเพิ่ม</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.4</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.88; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">88</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+      <div style="display:grid; gap:16px; align-items:center; grid-template-columns:1fr 90px 210px 120px; padding:0 12px">
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; line-height:1.3; color:#1f3a4d">3.3 จัดท่าผู้ป่วยได้ง่าย สะดวก และประหยัดเวลาในการปฏิบัติงาน</p>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:center; color:#1f3a4d">4.4</p>
+        <div style="display:flex; flex-direction:row; gap:10px; align-items:center">
+          <div style="height:14px; display:flex; flex-direction:row; flex:1; background:#eaf3f4; border-radius:7px">
+            <div style="height:14px; display:flex; flex-direction:column; flex:0.88; background:#3e8e9a; border-radius:7px">
+            </div>
+          </div>
+          <p style="width:40px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#1f3a4d">88</p>
+        </div>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:22px; text-align:center; color:#1f3a4d">มากที่สุด</p>
+      </div>
+    </div>
+  </div>
+  <p id="p557334eac279r1_0_0-e27475bc" style="position:absolute; top:220px; left:152px; width:390px; font-family:Sarabun, Tahoma, sans-serif; font-size:32px; text-align:center; color:#bfe3e8">ความพึงพอใจโดยรวม</p>
+  <p id="p557334eac279r1_0_2-e27475bc" style="position:absolute; top:614px; left:197px; width:300px; padding:10px 0; font-family:Kanit, Tahoma, sans-serif; font-size:34px; font-weight:600; text-align:center; color:#1f3a4d; background:#9fd0d6; border-radius:40px">ระดับมากที่สุด</p>
+  <p id="p557334eac279r1_0_3-e27475bc" style="position:absolute; top:696px; left:152px; width:390px; font-family:Sarabun, Tahoma, sans-serif; font-size:28px; text-align:center; color:#bfe3e8">(เกณฑ์ ≥ &nbsp;85%)</p>
+  <div id="p557334eac279r1_0_4-e27475bc" style="position:absolute; top:750px; left:152px; width:390px; height:2px; display:flex; flex-direction:column; background:#3e6478">
+  </div>
+  <p id="p557334eac279r1_0_5-e27475bc" style="position:absolute; top:772px; left:152px; width:390px; font-family:Sarabun, Tahoma, sans-serif; font-size:26px; color:#bfe3e8">ผู้ตอบแบบประเมิน</p>
+  <div id="p557334eac279r1_0_6-e27475bc" style="position:absolute; top:824px; left:152px; width:390px; height:30px; display:flex; flex-direction:row; gap:14px; align-items:center">
+    <p style="width:230px; font-family:Sarabun, Tahoma, sans-serif; font-size:23px; color:#ffffff">พยาบาล</p>
+    <div style="height:16px; display:flex; flex-direction:row; flex:1; background:#2e4f62; border-radius:8px">
+      <div style="height:16px; display:flex; flex-direction:column; flex:0.5; background:#9fd0d6; border-radius:8px">
+      </div>
+    </div>
+    <p style="width:60px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#ffffff">50%</p>
+  </div>
+  <div id="p557334eac279r1_0_7-e27475bc" style="position:absolute; top:873px; left:152px; width:390px; height:30px; display:flex; flex-direction:row; gap:14px; align-items:center">
+    <p style="width:230px; font-family:Sarabun, Tahoma, sans-serif; font-size:23px; color:#ffffff">ผู้ช่วยพยาบาล</p>
+    <div style="height:16px; display:flex; flex-direction:row; flex:1; background:#2e4f62; border-radius:8px">
+      <div style="height:16px; display:flex; flex-direction:column; flex:0.3; background:#6fb7c1; border-radius:8px">
+      </div>
+    </div>
+    <p style="width:60px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#ffffff">30%</p>
+  </div>
+  <div id="p557334eac279r1_0_8-e27475bc" style="position:absolute; top:923px; left:152px; width:390px; height:30px; display:flex; flex-direction:row; gap:14px; align-items:center">
+    <p style="width:230px; font-family:Sarabun, Tahoma, sans-serif; font-size:23px; color:#ffffff">นักรังสีทางการแพทย์</p>
+    <div style="height:16px; display:flex; flex-direction:row; flex:1; background:#2e4f62; border-radius:8px">
+      <div style="height:16px; display:flex; flex-direction:column; flex:0.2; background:#3e8e9a; border-radius:8px">
+      </div>
+    </div>
+    <p style="width:60px; font-family:Sarabun, Tahoma, sans-serif; font-size:24px; font-weight:600; text-align:right; color:#ffffff">20%</p>
+  </div>
+</section>
+<section class="slide" id="improve" data-transition="fade" style="background:#f3f8f8">
+  <div id="p04f52215159cr0-24485590" style="position:absolute; top:96px; left:112px; width:1696px; height:114px; display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">09 · แผนพัฒนาต่อ</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">การพัฒนาปรับปรุง</h2>
+  </div>
+  <div style="position:absolute; top:250px; left:112px; width:1696px; height:730px; display:flex; flex-direction:row; gap:36px">
+    <div style="position:relative; display:flex; flex-direction:column; gap:26px; flex:1; padding:72px 56px 56px; background:linear-gradient(160deg, #3e8e9a 0%, #24596a 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d38; overflow:hidden">
+      <div style="width:112px; height:112px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:56px; box-shadow:0 8px 20px #00000026">
+        <span class="x-icon" style="width:60px; height:60px; color:#24596a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      </div>
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; line-height:1.2; color:#ffffff">ขยายผลการใช้งาน</h3>
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.5; color:#eef7f8">ใช้หมอนต่อเนื่องจากห้องผ่าตัด ไปยังห้องพักฟื้นและหอผู้ป่วย</p>
+      <div style="display:flex; flex-direction:row; flex-wrap:wrap; gap:12px; align-items:center; margin-top:auto">
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">ห้องผ่าตัด</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:700; color:#bfe3e8">›</p>
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">ห้องพักฟื้น</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:700; color:#bfe3e8">›</p>
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">หอผู้ป่วย</p>
+      </div>
+      <p style="position:absolute; top:12px; right:36px; width:200px; font-family:Kanit, Tahoma, sans-serif; font-size:200px; font-weight:700; line-height:1; text-align:right; color:#ffffff; opacity:0.1">1</p>
+    </div>
+    <div style="position:relative; display:flex; flex-direction:column; gap:26px; flex:1; padding:72px 56px 56px; background:linear-gradient(160deg, #2b4e63 0%, #142a39 100%); border-radius:32px; box-shadow:0 16px 40px #1f3a4d38; overflow:hidden">
+      <div style="width:112px; height:112px; display:flex; flex-direction:row; align-items:center; justify-content:center; background:#ffffff; border-radius:56px; box-shadow:0 8px 20px #00000026">
+        <span class="x-icon" style="width:60px; height:60px; color:#142a39"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+      </div>
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:600; line-height:1.2; color:#ffffff">QR Code และสายรัดขา</h3>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.5; color:#eef7f8">
+        <li>ติด QR Code ขั้นตอนการใช้งานไว้ที่หมอน Hip Block เพื่อความสะดวกในการใช้งาน</li>
+      </ul>
+      <div style="display:flex; flex-direction:row; flex-wrap:nowrap; gap:12px; align-items:center">
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">สแกน QR Code</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:700; color:#bfe3e8">›</p>
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">ดูขั้นตอน</p>
+        <p style="font-family:Kanit, Tahoma, sans-serif; font-size:32px; font-weight:700; color:#bfe3e8">›</p>
+        <p style="padding:8px 22px; font-family:Kanit, Tahoma, sans-serif; font-size:28px; font-weight:600; color:#1f3a4d; background:#bfe3e8; border-radius:40px">วางหมอนถูกด้าน</p>
+      </div>
+      <ul style="font-family:Sarabun, Tahoma, sans-serif; font-size:38px; line-height:1.5; color:#eef7f8">
+        <li>ปรับสายรัดขาเป็นแบบสายเข็มขัด เพื่อเพิ่มความแข็งแรงและกระชับ</li>
+      </ul>
+      <p style="position:absolute; top:12px; right:36px; width:200px; font-family:Kanit, Tahoma, sans-serif; font-size:200px; font-weight:700; line-height:1; text-align:right; color:#ffffff; opacity:0.1">2</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="summary" data-transition="fade" style="display:flex; flex-direction:column; gap:28px; padding:96px 112px 104px; background:#f3f8f8">
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:26px; font-weight:600; color:#3e8e9a">10 · สรุปผล</p>
+    <h2 style="font-family:Kanit, Tahoma, sans-serif; font-size:60px; font-weight:600; line-height:1.15; color:#1f3a4d">สรุปผลการดำเนินการ</h2>
+  </div>
+  <div style="display:grid; gap:24px; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; flex:1">
+    <div style="display:flex; flex-direction:row; padding:28px 40px; background:#ffffff; border-left:14px solid #2b4e63; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:46px; font-weight:600; line-height:1.2; color:#1f3a4d">1. ความปลอดภัยของผิวหนัง</h3>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:37px; line-height:1.4; color:#1f3a4d">ไม่เกิดอุบัติการณ์แผลกดทับระดับ 1 ขึ้นไป หมอนยกส้นเท้าให้ลอย หุ้มผ้าซาตินลดแรงเสียดทานและแรงเฉือน</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:row; padding:28px 40px; background:#ffffff; border-left:14px solid #357f8c; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:46px; font-weight:600; line-height:1.2; color:#1f3a4d">2. ป้องกันข้อสะโพกเทียมหลุด</h3>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:37px; line-height:1.4; color:#1f3a4d">ไม่เกิดอุบัติการณ์ข้อสะโพกเทียมเคลื่อนหลุดขณะเคลื่อนย้ายหรือพลิกตะแคง หมอนล็อกองศาการกางขาได้มั่นคง</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:row; padding:28px 40px; background:#ffffff; border-left:14px solid #3e8e9a; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:46px; font-weight:600; line-height:1.2; color:#1f3a4d">3. ตรวจทางรังสี (X-ray)</h3>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:37px; line-height:1.4; color:#1f3a4d">ถ่ายภาพรังสีหลังผ่าตัดได้ทุกราย 100%&nbsp;<br>&nbsp;ไม่ต้องใช้อุปกรณ์จัดท่าเพิ่ม</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:row; padding:28px 40px; background:#ffffff; border-left:14px solid #6fb7c1; border-radius:32px; box-shadow:0 14px 36px #1f3a4d1a">
+      <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1">
+        <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:46px; font-weight:600; line-height:1.2; color:#1f3a4d">4. ความพึงพอใจของบุคลากร</h3>
+        <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:37px; line-height:1.4; color:#1f3a4d">ร้อยละ 87.1 สูงกว่าเป้าหมาย เด่นเรื่องจัดท่าสะดวก สลับใช้ได้ทั้งซ้ายและขวา และคุ้มค่าการใช้งาน</p>
+      </div>
+    </div>
+  </div>
+  <div style="height:120px; display:flex; flex-direction:row; align-items:center; flex:0 0 auto; padding:0 40px; background:linear-gradient(90deg, #1f3a4d 0%, #2f6275 100%); border-radius:32px; box-shadow:0 14px 36px #1f3a4d38">
+    <div style="display:flex; flex-direction:row; gap:24px; align-items:center; justify-content:center; flex:1">
+      <h3 style="font-family:Kanit, Tahoma, sans-serif; font-size:42px; color:#9fd0d6">ผลลัพธ์</h3>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1.1; color:#ffffff">ผ่านเกณฑ์ ครบ 4 ด้าน</p>
+    </div>
+    <div style="width:2px; height:64px; display:flex; flex-direction:column; background:#4f7a8c">
+    </div>
+    <div style="display:flex; flex-direction:row; gap:24px; align-items:center; justify-content:center; flex:1">
+      <p style="font-family:Sarabun, Tahoma, sans-serif; font-size:40px; line-height:1.5; color:#9fd0d6">ต้นทุนเพียง</p>
+      <p style="font-family:Kanit, Tahoma, sans-serif; font-size:52px; font-weight:700; line-height:1.1; color:#ffffff">613 บาท</p>
+    </div>
+  </div>
+</section>
+<section class="slide" id="cqi-video" data-transition="fade" style="background:#000000">
+  <img src="media/1bf86f80b7ad06c51f2b49f867a0b47e.jpg" alt="วิดีโอนำเสนอ CQI Hip B(lock) Ultra Smooth ความยาว 49 วินาที" data-video="media/d164e390aa5ed13de7f42b6d51bbc804.mp4" data-video-sound="on" id="36796097" style="position:absolute; top:0px; left:0px; width:1920px; height:1080px; object-fit:cover">
+</section>
+<section class="slide" id="thanks" data-transition="fade" style="display:flex; flex-direction:row; gap:64px; align-items:center; justify-content:space-between; padding:128px; background:#1f3a4d">
+  <div style="position:absolute; top:0; left:0; width:24px; height:1080px; display:flex; flex-direction:column; background:#6fb7c1">
+  </div>
+  <div style="display:flex; flex-direction:column; gap:28px">
+    <h1 style="font-family:Kanit, Tahoma, sans-serif; font-size:120px; font-weight:600; line-height:1.1; color:#f3f8f8">Thank you</h1>
+    <div style="width:160px; height:8px; display:flex; flex-direction:column; background:#6fb7c1; border-radius:4px">
+    </div>
+    <p style="width:1017px; font-family:Sarabun, Tahoma, sans-serif; font-size:36px; line-height:1.4; color:#bfd8dc">Hip B(Lock) Ultra Smooth<br>หน่วยผ่าตัดออร์โธปิดิคส์ โรงพยาบาลศิริราช</p>
+  </div>
+</section>
+</div>
+<div id="bar"></div>
+<div id="hud">
+  <button id="prev" title="ก่อนหน้า (←)">◀</button><span id="num"></span><button id="next" title="ถัดไป (→)">▶</button>
+  <button id="full" title="เต็มจอ (F)">⛶ เต็มจอ</button>
+</div>
+<div id="hint">กด → / คลิก เพื่อเปลี่ยนสไลด์ · กด F เพื่อเต็มจอ</div>
+<script>
+(() => {
+  const stage = document.getElementById("stage");
+  const slides = [...stage.querySelectorAll(":scope > section.slide")].filter((s) => !s.hasAttribute("hidden"));
+  const num = document.getElementById("num"), bar = document.getElementById("bar");
+  let cur = -1, pending = [], timers = [];
+
+  // fit the 1920x1080 stage in the window
+  function fit() {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transformOrigin = "50% 50%";
+    stage.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+  addEventListener("resize", fit); fit();
+
+  // videos: <img data-video> -> <video> with the image as its poster
+  slides.forEach((s) => s.querySelectorAll("img[data-video]").forEach((img) => {
+    const v = document.createElement("video");
+    v.src = img.dataset.video; v.poster = img.src; v.loop = true; v.playsInline = true; v.preload = "metadata";
+    v.muted = img.dataset.videoSound !== "on"; v.dataset.sound = img.dataset.videoSound || ""; v.dataset.delay = img.dataset.videoDelay || "0";
+    v.setAttribute("style", img.getAttribute("style") || ""); v.setAttribute("aria-label", img.alt || "");
+    for (const a of ["data-build-in", "id"]) if (img.hasAttribute(a)) v.setAttribute(a, img.getAttribute(a));
+    img.replaceWith(v);
+  }));
+
+  // builds: "effect [order] [auto]"
+  function builds(s) {
+    const items = [...s.querySelectorAll("[data-build-in]")].map((el, i) => {
+      const t = el.dataset.buildIn.trim().split(/\s+/);
+      const fx = t[0] || "fade", order = +(t.find((x) => /^\d+$/.test(x)) || 1), auto = t.includes("auto");
+      return { el, fx, order, auto, i };
+    });
+    const groups = {};
+    items.forEach((it) => (groups[it.order] = groups[it.order] || []).push(it));
+    return Object.keys(groups).map(Number).sort((a, b) => a - b).map((k) => groups[k]);
+  }
+  function reveal(group) { group.forEach((it) => it.el.classList.remove("pre")); }
+
+  function stopMedia(s) { s.querySelectorAll("video").forEach((v) => { v.pause(); try { v.currentTime = 0; } catch (e) {} }); }
+  function playMedia(s) {
+    s.querySelectorAll("video").forEach((v) => {
+      timers.push(setTimeout(() => {
+        v.muted = v.dataset.sound !== "on";
+        const p = v.play();
+        if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(() => {}); });
+      }, (+v.dataset.delay || 0) * 1000 + 300));
+    });
+  }
+
+  function go(n, instant) {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    timers.forEach(clearTimeout); timers = [];
+    if (cur >= 0 && cur !== n) { slides[cur].classList.remove("on"); stopMedia(slides[cur]); }
+    cur = n; const s = slides[n];
+    const gs = builds(s);
+    gs.flat().forEach((it) => { it.el.classList.add("pre", "fx-" + it.fx); });
+    s.classList.add("on");
+    pending = [];
+    let t = 350;
+    gs.forEach((g) => {
+      if (g.every((it) => it.auto) && !pending.length) { const at = t; timers.push(setTimeout(() => reveal(g), at)); t += 380; }
+      else pending.push(g);
+    });
+    if (instant) { gs.forEach(reveal); pending = []; }
+    playMedia(s);
+    num.textContent = `${n + 1} / ${slides.length}`;
+    bar.style.width = ((n + 1) / slides.length) * 100 + "%";
+    history.replaceState(null, "", "#" + (n + 1));
+  }
+  function next() { if (pending.length) reveal(pending.shift()); else if (cur < slides.length - 1) go(cur + 1); }
+  function prev() { if (cur > 0) go(cur - 1, true); }
+
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Enter", "ArrowDown"].includes(e.key)) { e.preventDefault(); next(); }
+    else if (["ArrowLeft", "PageUp", "ArrowUp", "Backspace"].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === "Home") go(0); else if (e.key === "End") go(slides.length - 1);
+    else if (e.key === "f" || e.key === "F") full();
+  });
+  function full() { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+  document.getElementById("next").onclick = (e) => { e.stopPropagation(); next(); };
+  document.getElementById("prev").onclick = (e) => { e.stopPropagation(); prev(); };
+  document.getElementById("full").onclick = (e) => { e.stopPropagation(); full(); };
+  stage.addEventListener("click", (e) => { if (e.target.tagName !== "VIDEO") (e.clientX < innerWidth * 0.25 ? prev : next)(); });
+  let tx = null;
+  addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; }, { passive: true });
+  addEventListener("touchend", (e) => { if (tx == null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 40) (d < 0 ? next : prev)(); tx = null; });
+
+  let hudT; const hud = () => { document.body.classList.add("show-hud"); clearTimeout(hudT); hudT = setTimeout(() => document.body.classList.remove("show-hud"), 2500); };
+  addEventListener("mousemove", hud); hud();
+  setTimeout(() => (document.getElementById("hint").style.opacity = 0), 4000);
+
+  // a page opened straight onto a video slide may only autoplay muted: the first click or key turns the sound on
+  const unmute = () => { if (cur >= 0) slides[cur].querySelectorAll('video[data-sound="on"]').forEach((v) => { v.muted = false; }); };
+  addEventListener("pointerdown", unmute, true); addEventListener("keydown", unmute, true);
+
+  const h = parseInt(location.hash.slice(1), 10);
+  go(isNaN(h) ? 0 : h - 1, true);
+})();
+</script>
+</body>
+</html>

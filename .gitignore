@@ -3,6 +3,8 @@
 !*/
 !.gitignore
 !README.md
+!docs/**
+!slides-web/**
 !video/renders/final.mp4
 !video/renders/usage/usage-steps.mp4
 !video/renders/usage/usage-steps-still.jpg

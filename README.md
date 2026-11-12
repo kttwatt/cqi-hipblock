@@ -5,7 +5,10 @@
 
 ## 🖥️ สไลด์นำเสนอ
 
-### 👉 [เปิดสไลด์นำเสนอ](https://claude.ai/artifact/EXST25rBQjPgekQnR5XE57)
+### 👉 [เปิดสไลด์นำเสนอ (ออนไลน์)](https://kttwatt.github.io/cqi-hipblock/)
+
+เปิดได้ทุกเครื่องโดยไม่ต้องเข้าสู่ระบบ · กด → / คลิก เพื่อเปลี่ยนสไลด์ · กด F เพื่อเต็มจอ
+(ต้นฉบับที่แก้ไขได้อยู่ใน [Claude Slides](https://claude.ai/artifact/EXST25rBQjPgekQnR5XE57); สร้างหน้าเว็บใหม่ด้วย `python slides-web/build.py <โฟลเดอร์ไฟล์สไลด์>`)
 
 สไลด์มีทั้งหมด 35 หน้า แบ่งเป็น 5 ส่วน:
 
